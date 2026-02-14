@@ -1,4 +1,4 @@
-import { YouTubeDataService } from "../src/services/youtube.ts";
+import { YouTubeDataService } from "../src/services/youtube";
 import { MetadataCache } from "../src/services/cache/metadataCache";
 
 type Args = {
@@ -84,7 +84,7 @@ const main = async () => {
   console.log(`ETag: ${etag ?? metadata.etag ?? "unknown"}`);
   cache.upsert(videoId, {
     title: metadata.snippet.title,
-    snippet: metadata.snippet,
+    snippet: metadata.snippet as unknown as Record<string, unknown>,
     etag: etag ?? metadata.etag,
   });
 

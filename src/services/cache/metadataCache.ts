@@ -75,6 +75,14 @@ export interface MetadataCacheOptions {
   path?: string;
 }
 
+interface MetadataCacheRow {
+  video_id: string;
+  title: string | null;
+  snippet: string | null;
+  etag: string | null;
+  last_fetched: string | number | null;
+}
+
 export class MetadataCache {
   private readonly db: Database.Database;
   private readonly getStmt: Database.Statement;
@@ -117,15 +125,15 @@ export class MetadataCache {
   }
 
   public get(videoId: string): MetadataCacheEntry | null {
-    const row = this.getStmt.get(videoId);
+    const row = this.getStmt.get(videoId) as MetadataCacheRow | undefined;
     if (!row) {
       return null;
     }
     return {
       videoId: row.video_id,
-      title: row.title,
+      title: row.title ?? row.video_id,
       snippet: row.snippet ? JSON.parse(row.snippet) : undefined,
-      etag: row.etag,
+      etag: row.etag ?? undefined,
       lastFetched: row.last_fetched ? new Date(Number(row.last_fetched)).toISOString() : undefined,
     };
   }
