@@ -1,0 +1,29 @@
+{
+  "manifest_version": 3,
+  "name": "TFY — Topic Focused YouTube",
+  "version": "0.1.0",
+  "description": "Filters YouTube sidebar suggestions to stay on-topic",
+  "permissions": ["storage", "webNavigation"],
+  "host_permissions": [
+    "https://www.googleapis.com/*",
+    "https://www.youtube.com/*"
+  ],
+  "background": {
+    "service_worker": "service-worker.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://www.youtube.com/watch*"],
+      "js": ["content-script.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  }
+}
