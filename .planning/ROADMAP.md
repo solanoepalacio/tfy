@@ -24,7 +24,12 @@
 4. Service worker correctly proxies API calls from the content script using the stored API key, with batched video ID lookups (up to 50 per request)
 
 **Dependencies:** None
-**Estimated plans:** 2-3
+**Plans:** 3 plans
+
+Plans:
+- [ ] 01-01-PLAN.md — Extension scaffold: manifest.json, icons, popup with API key storage
+- [ ] 01-02-PLAN.md — Data pipeline: service-worker.js (API proxy + nav relay) + content-script.js (video ID + category log)
+- [ ] 01-03-PLAN.md — Human verification: end-to-end test in Chrome browser
 
 ---
 
@@ -85,3 +90,4 @@
 
 ---
 *Roadmap created: 2026-02-20*
+*Phase 1 planned: 2026-02-23*
