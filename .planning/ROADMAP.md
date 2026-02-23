@@ -24,7 +24,7 @@
 4. Service worker correctly proxies API calls from the content script using the stored API key, with batched video ID lookups (up to 50 per request)
 
 **Dependencies:** None
-**Plans:** 3 plans
+**Plans:** 1/3 plans executed
 
 Plans:
 - [ ] 01-01-PLAN.md — Extension scaffold: manifest.json, icons, popup with API key storage

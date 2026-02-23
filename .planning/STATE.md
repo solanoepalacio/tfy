@@ -2,8 +2,9 @@
 
 ## Current Status
 
-**Active Phase:** None (roadmap created, planning not started)
-**Progress:** 0/3 phases complete
+**Active Phase:** 01-extension-foundation-category-detection
+**Current Plan:** 01 complete — advancing to 01-02
+**Progress:** [███░░░░░░░] 33%
 
 ## Project Reference
 
@@ -16,13 +17,31 @@ See: .planning/PROJECT.md (updated 2026-02-20)
 
 | Phase | Name | Status | Plans | Progress |
 |-------|------|--------|-------|----------|
-| 1 | Extension Foundation + Category Detection | Pending | 0/0 | 0% |
+| 1 | Extension Foundation + Category Detection | In Progress | 1/? | — |
 | 2 | Sidebar Filtering | Pending | 0/0 | 0% |
 | 3 | Popup Controls + Toggle Persistence | Pending | 0/0 | 0% |
+
+## Decisions
+
+- Content script scoped to youtube.com/watch* only — prevents injection on YouTube homepage and search pages
+- API key stored in chrome.storage.local — persists across browser restarts unlike sessionStorage/localStorage
+- type=password on API key input — masks key in popup UI without additional complexity
+- PNG icons generated with raw Node.js zlib — no external npm dependency needed for dev-mode placeholders
 
 ## Recent Activity
 
 - 2026-02-20: Roadmap created
+- 2026-02-23: Completed 01-01 — Chrome MV3 extension scaffold (manifest.json, icons, popup.html, popup.js)
+
+## Performance Metrics
+
+| Phase | Plan | Duration | Tasks | Files |
+|-------|------|----------|-------|-------|
+| 01-extension-foundation-category-detection | 01 | 1min | 2 | 6 |
+
+## Stopped At
+
+Completed 01-extension-foundation-category-detection 01-01-PLAN.md
 
 ---
-*Last updated: 2026-02-20*
+*Last updated: 2026-02-23*

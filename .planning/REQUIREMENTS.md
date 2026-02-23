@@ -9,8 +9,8 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Extension Core
 
-- [ ] **CORE-01**: Chrome Manifest v3 extension with service worker, content script, and popup
-- [ ] **CORE-02**: User can enter YouTube Data API v3 key once, persisted across sessions
+- [x] **CORE-01**: Chrome Manifest v3 extension with service worker, content script, and popup
+- [x] **CORE-02**: User can enter YouTube Data API v3 key once, persisted across sessions
 - [ ] **CORE-03**: Extension re-initializes filtering on YouTube SPA navigation (no page reload needed)
 - [ ] **CORE-04**: Toggle state persists across browser restarts
 
@@ -81,8 +81,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| CORE-01 | Phase 1 | Pending |
-| CORE-02 | Phase 1 | Pending |
+| CORE-01 | Phase 1 | Complete |
+| CORE-02 | Phase 1 | Complete |
 | CORE-03 | Phase 1 | Pending |
 | CORE-04 | Phase 3 | Pending |
 | CATD-01 | Phase 1 | Pending |
