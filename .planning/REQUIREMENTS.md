@@ -11,13 +11,13 @@ Requirements for initial release. Each maps to roadmap phases.
 
 - [x] **CORE-01**: Chrome Manifest v3 extension with service worker, content script, and popup
 - [x] **CORE-02**: User can enter YouTube Data API v3 key once, persisted across sessions
-- [ ] **CORE-03**: Extension re-initializes filtering on YouTube SPA navigation (no page reload needed)
+- [x] **CORE-03**: Extension re-initializes filtering on YouTube SPA navigation (no page reload needed)
 - [ ] **CORE-04**: Toggle state persists across browser restarts
 
 ### Category Detection
 
-- [ ] **CATD-01**: Extension extracts video ID from the current YouTube watch page
-- [ ] **CATD-02**: Extension detects the current video's category via YouTube Data API v3
+- [x] **CATD-01**: Extension extracts video ID from the current YouTube watch page
+- [x] **CATD-02**: Extension detects the current video's category via YouTube Data API v3
 
 ### Sidebar Filtering
 
@@ -83,10 +83,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 |-------------|-------|--------|
 | CORE-01 | Phase 1 | Complete |
 | CORE-02 | Phase 1 | Complete |
-| CORE-03 | Phase 1 | Pending |
+| CORE-03 | Phase 1 | Complete |
 | CORE-04 | Phase 3 | Pending |
-| CATD-01 | Phase 1 | Pending |
-| CATD-02 | Phase 1 | Pending |
+| CATD-01 | Phase 1 | Complete |
+| CATD-02 | Phase 1 | Complete |
 | FILT-01 | Phase 2 | Pending |
 | FILT-02 | Phase 2 | Pending |
 | FILT-03 | Phase 2 | Pending |
@@ -99,4 +99,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-02-20*
-*Last updated: 2026-02-20 after initial definition*
+*Last updated: 2026-02-23 after 01-02 completion (CORE-03, CATD-01, CATD-02 complete)*
