@@ -49,7 +49,11 @@ Plans:
 4. Sidebar suggestions that load lazily (via scroll or YouTube's incremental loading) are filtered as they appear
 
 **Dependencies:** Phase 1
-**Estimated plans:** 1-2
+**Plans:** 2 plans
+
+Plans:
+- [ ] 02-01-PLAN.md — Sidebar filtering engine: CSS injection, video ID extraction, session cache, filterSidebar(), MutationObserver, initForVideo()
+- [ ] 02-02-PLAN.md — Navigation wiring + human verification: wire initForVideo() to all navigation handlers with deduplication
 
 ---
 
@@ -91,3 +95,4 @@ Plans:
 ---
 *Roadmap created: 2026-02-20*
 *Phase 1 planned: 2026-02-23*
+*Phase 2 planned: 2026-02-23*
