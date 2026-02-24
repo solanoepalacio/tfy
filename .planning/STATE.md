@@ -2,23 +2,23 @@
 
 ## Current Status
 
-**Active Phase:** 01-extension-foundation-category-detection
-**Current Plan:** Not started
-**Progress:** [██████████] 100%
+**Active Phase:** 02-sidebar-filtering
+**Current Plan:** 02 (02-01 complete)
+**Progress:** [████████░░] 80%
 
 ## Project Reference
 
 See: .planning/PROJECT.md (updated 2026-02-20)
 
 **Core value:** When watching a YouTube video, the sidebar suggestions stay on-topic with what you're currently watching.
-**Current focus:** Phase 1 — Extension Foundation + Category Detection
+**Current focus:** Phase 2 — Sidebar Filtering
 
 ## Phase Status
 
 | Phase | Name | Status | Plans | Progress |
 |-------|------|--------|-------|----------|
 | 1 | Extension Foundation + Category Detection | Complete | 3/3 | 100% |
-| 2 | Sidebar Filtering | Pending | 0/0 | 0% |
+| 2 | Sidebar Filtering | In Progress | 1/2 | 50% |
 | 3 | Popup Controls + Toggle Persistence | Pending | 0/0 | 0% |
 
 ## Decisions
@@ -31,6 +31,7 @@ See: .planning/PROJECT.md (updated 2026-02-20)
 - return true in onMessage listener keeps channel open for async sendResponse
 - Single retry on null response handles service worker cold-start race (avoids infinite loops if no API key)
 - yt-navigate-finish DOM event used as fallback navigation detection alongside service worker relay
+- [Phase 02-sidebar-filtering]: 20px max-height on tfy-hidden class keeps ::before label visible; session cache cleared by navigation handlers not initForVideo; unknown-category items not collapsed to avoid hiding potentially on-topic content
 
 ## Recent Activity
 
@@ -39,6 +40,7 @@ See: .planning/PROJECT.md (updated 2026-02-20)
 - 2026-02-23: Completed 01-02 — service-worker.js (YouTube Data API proxy + SPA navigation relay) and content-script.js (video ID extraction + category logging)
 - 2026-02-23: Reached 01-03 checkpoint — human browser verification required before Phase 2
 - 2026-02-23: Completed 01-03 — human verified all 5 end-to-end steps passed; Phase 1 complete
+- 2026-02-24: Completed 02-01 — complete sidebar filtering engine (CSS injection, batched API cache, MutationObserver, initForVideo orchestrator)
 
 ## Performance Metrics
 
@@ -47,10 +49,11 @@ See: .planning/PROJECT.md (updated 2026-02-20)
 | 01-extension-foundation-category-detection | 01 | 1min | 2 | 6 |
 | 01-extension-foundation-category-detection | 02 | 1min | 2 | 2 |
 | 01-extension-foundation-category-detection | 03 | 1min | 1 | 0 |
+| 02-sidebar-filtering | 01 | 1min | 2 | 1 |
 
 ## Stopped At
 
-Completed 01-03-PLAN.md — Phase 1 fully complete. Ready for Phase 2: Sidebar Filtering.
+Completed 02-01-PLAN.md — sidebar filtering engine complete. Ready for 02-02: navigation handler wiring.
 
 ---
-*Last updated: 2026-02-23 22:30Z*
+*Last updated: 2026-02-24 00:03Z*

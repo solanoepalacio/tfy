@@ -21,9 +21,9 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Sidebar Filtering
 
-- [ ] **FILT-01**: Extension identifies sidebar suggestion videos and retrieves their categories (batched API calls, up to 50 IDs per request)
-- [ ] **FILT-02**: Extension compares each suggestion's category to the current video's category
-- [ ] **FILT-03**: Off-topic suggestions are collapsed via CSS (not removed from DOM)
+- [x] **FILT-01**: Extension identifies sidebar suggestion videos and retrieves their categories (batched API calls, up to 50 IDs per request)
+- [x] **FILT-02**: Extension compares each suggestion's category to the current video's category
+- [x] **FILT-03**: Off-topic suggestions are collapsed via CSS (not removed from DOM)
 
 ### Popup
 
@@ -87,9 +87,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CORE-04 | Phase 3 | Pending |
 | CATD-01 | Phase 1 | Complete |
 | CATD-02 | Phase 1 | Complete |
-| FILT-01 | Phase 2 | Pending |
-| FILT-02 | Phase 2 | Pending |
-| FILT-03 | Phase 2 | Pending |
+| FILT-01 | Phase 2 | Complete |
+| FILT-02 | Phase 2 | Complete |
+| FILT-03 | Phase 2 | Complete |
 | POPU-01 | Phase 3 | Pending |
 
 **Coverage:**
