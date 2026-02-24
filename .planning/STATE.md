@@ -2,9 +2,9 @@
 
 ## Current Status
 
-**Active Phase:** 03-popup-controls-toggle-persistence
-**Current Plan:** 01 (03-01 complete)
-**Progress:** [█████████░] 86%
+**Active Phase:** 03-popup-controls-toggle-persistence (Complete)
+**Current Plan:** 02 (03-02 complete — Phase 3 done)
+**Progress:** [██████████] 100%
 
 ## Project Reference
 
@@ -18,8 +18,8 @@ See: .planning/PROJECT.md (updated 2026-02-20)
 | Phase | Name | Status | Plans | Progress |
 |-------|------|--------|-------|----------|
 | 1 | Extension Foundation + Category Detection | Complete | 3/3 | 100% |
-| 2 | Sidebar Filtering | In Progress | 2/2 | 90% |
-| 3 | Popup Controls + Toggle Persistence | Pending | 0/0 | 0% |
+| 2 | Sidebar Filtering | Complete | 2/2 | 100% |
+| 3 | Popup Controls + Toggle Persistence | Complete | 2/2 | 100% |
 
 ## Decisions
 
@@ -35,6 +35,7 @@ See: .planning/PROJECT.md (updated 2026-02-20)
 - [Phase 02-sidebar-filtering]: lastProcessedVideoId deduplication set before initForVideo call; fetchAndLogCategory retained with no call sites
 - [Phase 03-popup-controls-toggle-persistence]: Separate chrome.storage.local.get calls for apiKey and filteringEnabled kept per existing pattern
 - [Phase 03-popup-controls-toggle-persistence]: Re-enable path checks currentCategoryId first (no API call) before falling back to initForVideo
+- [Phase 03-popup-controls-toggle-persistence]: Human verification in real Chrome browser is required for popup/content-script messaging — automated tests cannot replicate chrome.tabs.sendMessage across popup/tab boundary
 
 ## Recent Activity
 
@@ -46,6 +47,7 @@ See: .planning/PROJECT.md (updated 2026-02-20)
 - 2026-02-24: Completed 02-01 — complete sidebar filtering engine (CSS injection, batched API cache, MutationObserver, initForVideo orchestrator)
 - 2026-02-24: 02-02 Task 1 done — navigation handlers wired to initForVideo() with lastProcessedVideoId deduplication and teardown cycle; at human-verify checkpoint
 - 2026-02-24: Completed 03-01 — filtering toggle checkbox in popup with chrome.storage.local persistence and TFY_TOGGLE message handler in content-script
+- 2026-02-24: Completed 03-02 — human-verified end-to-end toggle: OFF reveals sidebar immediately, ON re-collapses within ~1s, state persists across Chrome restart. Phase 3 complete.
 
 ## Performance Metrics
 
@@ -57,10 +59,11 @@ See: .planning/PROJECT.md (updated 2026-02-20)
 | 02-sidebar-filtering | 01 | 1min | 2 | 1 |
 | 02-sidebar-filtering | 02 | 2min | 1 | 1 |
 | 03-popup-controls-toggle-persistence | 01 | 1min | 2 | 4 |
+| 03-popup-controls-toggle-persistence | 02 | 0min | 1 | 0 |
 
 ## Stopped At
 
-Completed 03-01-PLAN.md — filtering toggle UI and content-script wiring complete. Phase 3 Plan 1 done (commits 0de1512, 2ecab1a).
+Completed 03-02-PLAN.md — Phase 3 end-to-end human verification passed. All three toggle tests (A/B/C) confirmed in Chrome. Phase 3 complete.
 
 ---
-*Last updated: 2026-02-24 14:37Z*
+*Last updated: 2026-02-24 14:51Z*
