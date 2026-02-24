@@ -7,12 +7,12 @@
 
 ### Documentation
 
-- [ ] **DOC-01**: Reader understands what TFY does and why it exists (motivation + problem statement)
-- [ ] **DOC-02**: Reader understands this extension is a POC built entirely by AI agents as an agentic engineering exercise
-- [ ] **DOC-03**: Reader can identify prerequisites before installing (Chrome, Google Cloud project, YouTube Data API v3 key)
-- [ ] **DOC-04**: Reader can install the extension in Chrome developer mode from a fresh clone
-- [ ] **DOC-05**: Reader can configure the extension by entering their YouTube Data API v3 key in the popup
-- [ ] **DOC-06**: Reader understands daily usage — how filtering works, the popup toggle, collapsed labels, and Shorts suppression
+- [x] **DOC-01**: Reader understands what TFY does and why it exists (motivation + problem statement)
+- [x] **DOC-02**: Reader understands this extension is a POC built entirely by AI agents as an agentic engineering exercise
+- [x] **DOC-03**: Reader can identify prerequisites before installing (Chrome, Google Cloud project, YouTube Data API v3 key)
+- [x] **DOC-04**: Reader can install the extension in Chrome developer mode from a fresh clone
+- [x] **DOC-05**: Reader can configure the extension by entering their YouTube Data API v3 key in the popup
+- [x] **DOC-06**: Reader understands daily usage — how filtering works, the popup toggle, collapsed labels, and Shorts suppression
 
 ## Out of Scope
 
@@ -26,12 +26,12 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| DOC-01 | Phase 5 | Pending |
-| DOC-02 | Phase 5 | Pending |
-| DOC-03 | Phase 5 | Pending |
-| DOC-04 | Phase 5 | Pending |
-| DOC-05 | Phase 5 | Pending |
-| DOC-06 | Phase 5 | Pending |
+| DOC-01 | Phase 5 | Complete |
+| DOC-02 | Phase 5 | Complete |
+| DOC-03 | Phase 5 | Complete |
+| DOC-04 | Phase 5 | Complete |
+| DOC-05 | Phase 5 | Complete |
+| DOC-06 | Phase 5 | Complete |
 
 **Coverage:**
 - v1.2 requirements: 6 total

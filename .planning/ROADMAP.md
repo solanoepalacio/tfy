@@ -180,7 +180,7 @@ Plans:
 | 2. Sidebar Filtering | v1.0 | 2/2 | Complete | 2026-02-24 |
 | 3. Popup Controls + Toggle Persistence | v1.0 | 2/2 | Complete | 2026-02-24 |
 | 4. Observability & Shorts Suppression | v1.1 | 1/1 | Complete | 2026-02-24 |
-| 5. Write README | v1.2 | 0/1 | Not started | - |
+| 5. Write README | 1/1 | Complete   | 2026-02-24 | - |
 
 ---
 *Roadmap created: 2026-02-20*
