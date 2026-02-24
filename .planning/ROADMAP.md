@@ -71,7 +71,7 @@ Plans:
 3. Toggle state survives browser restart — if filtering was off when Chrome closed, it remains off when Chrome reopens
 
 **Dependencies:** Phase 2
-**Plans:** 2 plans
+**Plans:** 1/2 plans executed
 
 Plans:
 - [ ] 03-01-PLAN.md — Toggle implementation: popup checkbox UI, storage persistence, content script startup guard and TFY_TOGGLE handler

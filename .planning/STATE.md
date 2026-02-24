@@ -2,9 +2,9 @@
 
 ## Current Status
 
-**Active Phase:** 02-sidebar-filtering
-**Current Plan:** 02 (02-01 complete)
-**Progress:** [████████░░] 80%
+**Active Phase:** 03-popup-controls-toggle-persistence
+**Current Plan:** 01 (03-01 complete)
+**Progress:** [█████████░] 86%
 
 ## Project Reference
 
@@ -33,6 +33,8 @@ See: .planning/PROJECT.md (updated 2026-02-20)
 - yt-navigate-finish DOM event used as fallback navigation detection alongside service worker relay
 - [Phase 02-sidebar-filtering]: 20px max-height on tfy-hidden class keeps ::before label visible; session cache cleared by navigation handlers not initForVideo; unknown-category items not collapsed to avoid hiding potentially on-topic content
 - [Phase 02-sidebar-filtering]: lastProcessedVideoId deduplication set before initForVideo call; fetchAndLogCategory retained with no call sites
+- [Phase 03-popup-controls-toggle-persistence]: Separate chrome.storage.local.get calls for apiKey and filteringEnabled kept per existing pattern
+- [Phase 03-popup-controls-toggle-persistence]: Re-enable path checks currentCategoryId first (no API call) before falling back to initForVideo
 
 ## Recent Activity
 
@@ -43,6 +45,7 @@ See: .planning/PROJECT.md (updated 2026-02-20)
 - 2026-02-23: Completed 01-03 — human verified all 5 end-to-end steps passed; Phase 1 complete
 - 2026-02-24: Completed 02-01 — complete sidebar filtering engine (CSS injection, batched API cache, MutationObserver, initForVideo orchestrator)
 - 2026-02-24: 02-02 Task 1 done — navigation handlers wired to initForVideo() with lastProcessedVideoId deduplication and teardown cycle; at human-verify checkpoint
+- 2026-02-24: Completed 03-01 — filtering toggle checkbox in popup with chrome.storage.local persistence and TFY_TOGGLE message handler in content-script
 
 ## Performance Metrics
 
@@ -53,10 +56,11 @@ See: .planning/PROJECT.md (updated 2026-02-20)
 | 01-extension-foundation-category-detection | 03 | 1min | 1 | 0 |
 | 02-sidebar-filtering | 01 | 1min | 2 | 1 |
 | 02-sidebar-filtering | 02 | 2min | 1 | 1 |
+| 03-popup-controls-toggle-persistence | 01 | 1min | 2 | 4 |
 
 ## Stopped At
 
-02-02 checkpoint — Task 1 (navigation wiring) committed at bef1f4d. Awaiting human verify (Task 2): reload extension in Chrome, navigate to YouTube watch page, confirm sidebar filtering runs and off-topic items are visually collapsed.
+Completed 03-01-PLAN.md — filtering toggle UI and content-script wiring complete. Phase 3 Plan 1 done (commits 0de1512, 2ecab1a).
 
 ---
-*Last updated: 2026-02-24 00:08Z*
+*Last updated: 2026-02-24 14:37Z*
