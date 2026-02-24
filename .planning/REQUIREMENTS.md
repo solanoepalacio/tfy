@@ -3,9 +3,7 @@
 **Defined:** 2026-02-20
 **Core Value:** When watching a YouTube video, the sidebar suggestions stay on-topic with what you're currently watching.
 
-## v1 Requirements
-
-Requirements for initial release. Each maps to roadmap phases.
+## v1.0 Requirements (Complete)
 
 ### Extension Core
 
@@ -28,6 +26,18 @@ Requirements for initial release. Each maps to roadmap phases.
 ### Popup
 
 - [x] **POPU-01**: User can toggle filtering on/off from the extension popup
+
+## v1.1 Requirements
+
+Requirements for current milestone. Each maps to roadmap phases.
+
+### Label Observability
+
+- [ ] **LABL-01**: Hidden sidebar items display the video's title and category name on the collapsed label (e.g., "hidden: Gaming · How to speedrun Minecraft")
+
+### Shorts Suppression
+
+- [ ] **SHRT-01**: The Shorts shelf panel (ytm-shorts-lockup-view-model-v2) is hidden on all YouTube watch pages
 
 ## v2 Requirements
 
@@ -67,7 +77,7 @@ Explicitly excluded. Documented to prevent scope creep.
 | Manual category allowlist/blocklist UI | Defeats auto-infer value prop — TFY2's differentiator is zero-config |
 | Keyword/regex content filtering | Different product entirely — use BlockTube for this |
 | Homepage feed filtering | No "current video" context on homepage to match against |
-| YouTube Shorts blocking | Different UI surface with different DOM — unrelated to sidebar filtering |
+| YouTube Shorts blocking | Previously deferred — now in scope as of v1.1 |
 | Comments hiding | Unrelated to cross-topic distraction filtering |
 | Autoplay control | YouTube has a native autoplay toggle |
 | Time limits/scheduling | Different product category — use StayFocusd |
@@ -92,11 +102,16 @@ Which phases cover which requirements. Updated during roadmap creation.
 | FILT-03 | Phase 2 | Complete |
 | POPU-01 | Phase 3 | Complete |
 
-**Coverage:**
-- v1 requirements: 10 total
+**Coverage (v1.0):**
+- v1.0 requirements: 10 total
 - Mapped to phases: 10
-- Unmapped: 0
+- Status: All complete ✓
+
+**Coverage (v1.1):**
+- v1.1 requirements: 2 total
+- Mapped to phases: TBD (roadmap in progress)
+- Unmapped: 2 ⚠️
 
 ---
 *Requirements defined: 2026-02-20*
-*Last updated: 2026-02-23 after 01-02 completion (CORE-03, CATD-01, CATD-02 complete)*
+*Last updated: 2026-02-24 after v1.1 milestone start*
