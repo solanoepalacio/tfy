@@ -52,6 +52,7 @@ let currentCategoryId = null;  // category of the currently-watched video
 let sidebarObserver = null;    // MutationObserver instance
 const sessionCategoryCache = new Map(); // videoId -> categoryId, reset on navigation
 let lastProcessedVideoId = null; // prevents double-filtering when both nav signals fire
+let filteringEnabled = true; // module-level; updated by TFY_TOGGLE message
 
 async function filterSidebar() {
   if (!currentCategoryId) return;
@@ -193,17 +194,40 @@ async function fetchAndLogCategory(videoId) {
 }
 
 // ─── Initial Load ─────────────────────────────────────────────────────────────
-// document_idle guarantees the URL reflects the current video
-const initialVideoId = new URL(window.location.href).searchParams.get('v');
-if (initialVideoId) {
-  lastProcessedVideoId = initialVideoId;
-  initForVideo(initialVideoId);
-}
+// document_idle guarantees the URL reflects the current video.
+// Wrapped in async IIFE because content scripts use classic scripts (not ES modules)
+// and top-level await is not available without "type": "module" in manifest.
+(async () => {
+  const { filteringEnabled: storedEnabled = true } = await chrome.storage.local.get('filteringEnabled');
+  filteringEnabled = storedEnabled;
+  const initialVideoId = new URL(window.location.href).searchParams.get('v');
+  if (initialVideoId && filteringEnabled) {
+    lastProcessedVideoId = initialVideoId;
+    initForVideo(initialVideoId);
+  }
+})();
 
 // ─── SPA Navigation (Primary: service worker relay) ───────────────────────────
 // Service worker detects pushState via webNavigation.onHistoryStateUpdated
 // and sends a YT_NAVIGATION message with the new videoId.
 chrome.runtime.onMessage.addListener((message) => {
+  if (message.type === 'TFY_TOGGLE') {
+    filteringEnabled = message.enabled;
+    if (message.enabled) {
+      // Re-enable: if we have a current video context, filter immediately
+      if (currentCategoryId) {
+        filterSidebar();
+        observeSidebar(filterSidebar);
+      } else if (lastProcessedVideoId) {
+        initForVideo(lastProcessedVideoId);
+      }
+    } else {
+      // Disable: reveal all hidden items and stop the observer
+      resetAllCollapsed();
+      disconnectSidebarObserver();
+    }
+    return;
+  }
   if (message.type === 'YT_NAVIGATION') {
     if (message.videoId === lastProcessedVideoId) return; // deduplicate
     lastProcessedVideoId = message.videoId;
@@ -215,7 +239,7 @@ chrome.runtime.onMessage.addListener((message) => {
     currentCategoryId = null;
 
     // Initialize filtering for new video
-    initForVideo(message.videoId);
+    if (filteringEnabled) initForVideo(message.videoId);
   }
 });
 
@@ -235,5 +259,5 @@ document.addEventListener('yt-navigate-finish', () => {
   currentCategoryId = null;
 
   // Initialize filtering for new video
-  initForVideo(videoId);
+  if (filteringEnabled) initForVideo(videoId);
 });
