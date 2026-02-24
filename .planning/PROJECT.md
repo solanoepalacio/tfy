@@ -8,19 +8,28 @@ A personal-use Chrome browser extension that filters YouTube's sidebar suggestio
 
 When watching a YouTube video, the sidebar suggestions stay on-topic with what you're currently watching — eliminating cross-interest distraction during focused research sessions.
 
+## Current Milestone: v1.1 Observability & Shorts Suppression
+
+**Goal:** Surface filtering context on hidden items and unconditionally suppress the Shorts panel.
+
+**Target features:**
+- Hidden sidebar items show the video's title and category (not just "hidden: off-topic")
+- Shorts shelf panel hidden on all YouTube watch pages
+
 ## Requirements
 
 ### Validated
 
-(None yet — ship to validate)
+- ✓ Detect the category of the currently playing YouTube video via YouTube Data API v3 — v1.0
+- ✓ Filter sidebar suggestions by comparing their category to the current video's category — v1.0
+- ✓ Collapse off-topic suggestions with a small "hidden: off-topic" label — v1.0
+- ✓ Provide a popup with a toggle to turn filtering on/off — v1.0
+- ✓ Store and use a personal YouTube Data API v3 key — v1.0
 
 ### Active
 
-- [ ] Detect the category of the currently playing YouTube video via YouTube Data API v3
-- [ ] Filter sidebar suggestions by comparing their category to the current video's category
-- [ ] Collapse off-topic suggestions with a small "hidden: off-topic" label that can be expanded
-- [ ] Provide a popup with a toggle to turn filtering on/off
-- [ ] Store and use a personal YouTube Data API v3 key
+- [ ] Hidden sidebar items display the video's title and category on the collapsed label
+- [ ] Shorts shelf panel (ytm-shorts-lockup-view-model-v2) is hidden on YouTube watch pages
 
 ### Out of Scope
 
@@ -55,4 +64,4 @@ When watching a YouTube video, the sidebar suggestions stay on-topic with what y
 | Personal API key stored in extension | Developer-only use, no need for OAuth or key management UI | — Pending |
 
 ---
-*Last updated: 2026-02-20 after initialization*
+*Last updated: 2026-02-24 after v1.1 milestone start*

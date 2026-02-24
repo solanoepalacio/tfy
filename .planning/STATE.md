@@ -2,16 +2,16 @@
 
 ## Current Status
 
-**Active Phase:** 03-popup-controls-toggle-persistence (Complete)
-**Current Plan:** Not started
-**Progress:** [██████████] 100%
+**Active Phase:** Not started (defining requirements)
+**Current Plan:** —
+**Progress:** [░░░░░░░░░░] 0%
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-02-20)
+See: .planning/PROJECT.md (updated 2026-02-24)
 
 **Core value:** When watching a YouTube video, the sidebar suggestions stay on-topic with what you're currently watching.
-**Current focus:** Phase 2 — Sidebar Filtering
+**Current focus:** v1.1 — Observability & Shorts Suppression
 
 ## Phase Status
 
@@ -63,7 +63,7 @@ See: .planning/PROJECT.md (updated 2026-02-20)
 
 ## Stopped At
 
-Completed 03-02-PLAN.md — Phase 3 end-to-end human verification passed. All three toggle tests (A/B/C) confirmed in Chrome. Phase 3 complete.
+Starting milestone v1.1 — Observability & Shorts Suppression. Requirements and roadmap in progress.
 
 ---
-*Last updated: 2026-02-24 14:51Z*
+*Last updated: 2026-02-24 — Milestone v1.1 started*
