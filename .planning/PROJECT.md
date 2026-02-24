@@ -8,13 +8,17 @@ A personal-use Chrome browser extension that filters YouTube's sidebar suggestio
 
 When watching a YouTube video, the sidebar suggestions stay on-topic with what you're currently watching — eliminating cross-interest distraction during focused research sessions.
 
-## Current Milestone: v1.1 Observability & Shorts Suppression
+## Current Milestone: v1.2 Readme Documentation
 
-**Goal:** Surface filtering context on hidden items and unconditionally suppress the Shorts panel.
+**Goal:** Write a complete README that explains the extension's motivation, the agentic POC origin, and guides a new user through install, API key setup, and daily usage.
 
 **Target features:**
-- Hidden sidebar items show the video's title and category (not just "hidden: off-topic")
-- Shorts shelf panel hidden on all YouTube watch pages
+- README explains motivation (topic-isolation, cross-interest distraction problem)
+- README notes this POC was built entirely by AI agents as an agentic engineering exercise
+- README covers prerequisites (Chrome, Google Cloud project, API key)
+- README provides step-by-step installation (clone/download, load unpacked in dev mode)
+- README covers configuration (entering the API key in the popup)
+- README covers daily usage (filtering behavior, toggle, collapsed labels, Shorts suppression)
 
 ## Requirements
 
@@ -25,11 +29,12 @@ When watching a YouTube video, the sidebar suggestions stay on-topic with what y
 - ✓ Collapse off-topic suggestions with a small "hidden: off-topic" label — v1.0
 - ✓ Provide a popup with a toggle to turn filtering on/off — v1.0
 - ✓ Store and use a personal YouTube Data API v3 key — v1.0
+- ✓ Hidden sidebar items display the video's title and category on the collapsed label — v1.1
+- ✓ Shorts shelf panel is hidden on YouTube watch pages — v1.1
 
 ### Active
 
-- [ ] Hidden sidebar items display the video's title and category on the collapsed label
-- [ ] Shorts shelf panel (ytm-shorts-lockup-view-model-v2) is hidden on YouTube watch pages
+- [ ] README.md documents motivation, agentic POC origin, prerequisites, install, setup, and usage
 
 ### Out of Scope
 
@@ -64,4 +69,4 @@ When watching a YouTube video, the sidebar suggestions stay on-topic with what y
 | Personal API key stored in extension | Developer-only use, no need for OAuth or key management UI | — Pending |
 
 ---
-*Last updated: 2026-02-24 after v1.1 milestone start*
+*Last updated: 2026-02-24 after v1.2 milestone start*

@@ -2,16 +2,16 @@
 
 ## Current Status
 
-**Active Phase:** Phase 4 — Observability & Shorts Suppression
-**Current Plan:** 04-01 complete
-**Progress:** [██████████] 100%
+**Active Phase:** Not started (defining requirements)
+**Current Plan:** —
+**Progress:** [░░░░░░░░░░] 0%
 
 ## Project Reference
 
 See: .planning/PROJECT.md (updated 2026-02-24)
 
 **Core value:** When watching a YouTube video, the sidebar suggestions stay on-topic with what you're currently watching.
-**Current focus:** v1.1 — Observability & Shorts Suppression
+**Current focus:** v1.2 — Readme Documentation
 
 ## Phase Status
 
@@ -70,7 +70,7 @@ See: .planning/PROJECT.md (updated 2026-02-24)
 
 ## Stopped At
 
-Completed 04-01-PLAN.md. Phase 4 complete — LABL-01 and SHRT-01 fulfilled. v1.1 milestone complete.
+Milestone v1.2 started — defining requirements.
 
 ---
-*Last updated: 2026-02-24 — Phase 4 complete, v1.1 milestone complete*
+*Last updated: 2026-02-24 — Milestone v1.2 started*
