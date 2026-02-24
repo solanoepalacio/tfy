@@ -14,12 +14,17 @@ function injectTFYStyles() {
       opacity: 0.5;
     }
     yt-lockup-view-model.tfy-hidden::before {
-      content: 'hidden: off-topic';
+      content: attr(data-tfy-label);
       display: block;
       font-size: 11px;
       color: #888;
       padding: 2px 8px;
       line-height: 16px;
+    }
+    /* SHRT-01: Hide Shorts shelf on watch pages */
+    ytd-reel-shelf-renderer,
+    ytm-shorts-lockup-view-model-v2 {
+      display: none !important;
     }
   `;
   document.head.appendChild(style);
