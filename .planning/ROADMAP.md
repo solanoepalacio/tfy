@@ -49,7 +49,7 @@ Plans:
 4. Sidebar suggestions that load lazily (via scroll or YouTube's incremental loading) are filtered as they appear
 
 **Dependencies:** Phase 1
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 
 Plans:
 - [ ] 02-01-PLAN.md — Sidebar filtering engine: CSS injection, video ID extraction, session cache, filterSidebar(), MutationObserver, initForVideo()
@@ -71,7 +71,11 @@ Plans:
 3. Toggle state survives browser restart — if filtering was off when Chrome closed, it remains off when Chrome reopens
 
 **Dependencies:** Phase 2
-**Estimated plans:** 1
+**Plans:** 2 plans
+
+Plans:
+- [ ] 03-01-PLAN.md — Toggle implementation: popup checkbox UI, storage persistence, content script startup guard and TFY_TOGGLE handler
+- [ ] 03-02-PLAN.md — Human verification: end-to-end toggle test in Chrome browser
 
 ---
 
@@ -96,3 +100,4 @@ Plans:
 *Roadmap created: 2026-02-20*
 *Phase 1 planned: 2026-02-23*
 *Phase 2 planned: 2026-02-23*
+*Phase 3 planned: 2026-02-24*
