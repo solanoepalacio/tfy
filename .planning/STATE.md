@@ -3,7 +3,7 @@
 ## Current Status
 
 **Active Phase:** 03-popup-controls-toggle-persistence (Complete)
-**Current Plan:** 02 (03-02 complete — Phase 3 done)
+**Current Plan:** Not started
 **Progress:** [██████████] 100%
 
 ## Project Reference
