@@ -35,7 +35,11 @@ function extractVideoIdFromRenderer(el) {
   }
 }
 
-function collapseElement(el) {
+function collapseElement(el, title, categoryName) {
+  const label = (title && categoryName)
+    ? `hidden: ${categoryName} · ${title}`
+    : 'hidden: off-topic';
+  el.setAttribute('data-tfy-label', label);
   el.classList.add('tfy-hidden');
 }
 
@@ -53,6 +57,41 @@ let sidebarObserver = null;    // MutationObserver instance
 const sessionCategoryCache = new Map(); // videoId -> categoryId, reset on navigation
 let lastProcessedVideoId = null; // prevents double-filtering when both nav signals fire
 let filteringEnabled = true; // module-level; updated by TFY_TOGGLE message
+
+const CATEGORY_NAMES = {
+  '1': 'Film & Animation',
+  '2': 'Autos & Vehicles',
+  '10': 'Music',
+  '15': 'Pets & Animals',
+  '17': 'Sports',
+  '18': 'Short Movies',
+  '19': 'Travel & Events',
+  '20': 'Gaming',
+  '21': 'Videoblogging',
+  '22': 'People & Blogs',
+  '23': 'Comedy',
+  '24': 'Entertainment',
+  '25': 'News & Politics',
+  '26': 'Howto & Style',
+  '27': 'Education',
+  '28': 'Science & Technology',
+  '29': 'Nonprofits & Activism',
+  '30': 'Movies',
+  '31': 'Anime/Animation',
+  '32': 'Action/Adventure',
+  '33': 'Classics',
+  '34': 'Comedy',
+  '35': 'Documentary',
+  '36': 'Drama',
+  '37': 'Family',
+  '38': 'Foreign',
+  '39': 'Horror',
+  '40': 'Sci-Fi/Fantasy',
+  '41': 'Thriller',
+  '42': 'Shorts',
+  '43': 'Shows',
+  '44': 'Trailers',
+};
 
 async function filterSidebar() {
   if (!currentCategoryId) return;
@@ -92,7 +131,10 @@ async function filterSidebar() {
   for (const [id, el] of idToRenderer.entries()) {
     const cat = sessionCategoryCache.get(id);
     if (cat !== undefined && cat !== currentCategoryId) {
-      collapseElement(el);
+      const titleEl = el.querySelector('a[href*="watch?v="]');
+      const title = titleEl ? titleEl.getAttribute('aria-label') || titleEl.textContent.trim() : '';
+      const categoryName = CATEGORY_NAMES[cat] || cat;
+      collapseElement(el, title, categoryName);
       collapsed++;
     }
   }
