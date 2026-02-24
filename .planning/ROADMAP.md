@@ -93,7 +93,11 @@ Plans:
 3. Label content updates correctly when navigating between videos via SPA navigation
 
 **Dependencies:** Phase 3
-**Plans:** TBD
+**Plans:** 2 plans
+
+Plans:
+- [ ] 04-01-PLAN.md — Rich labels (LABL-01) + Shorts suppression (SHRT-01): update content-script.js CSS and filtering logic
+- [ ] 04-02-PLAN.md — Human verification: confirm labels and Shorts suppression in real Chrome
 
 ---
 
