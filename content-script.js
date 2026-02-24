@@ -51,6 +51,7 @@ injectTFYStyles();
 let currentCategoryId = null;  // category of the currently-watched video
 let sidebarObserver = null;    // MutationObserver instance
 const sessionCategoryCache = new Map(); // videoId -> categoryId, reset on navigation
+let lastProcessedVideoId = null; // prevents double-filtering when both nav signals fire
 
 async function filterSidebar() {
   if (!currentCategoryId) return;
@@ -194,14 +195,27 @@ async function fetchAndLogCategory(videoId) {
 // ─── Initial Load ─────────────────────────────────────────────────────────────
 // document_idle guarantees the URL reflects the current video
 const initialVideoId = new URL(window.location.href).searchParams.get('v');
-fetchAndLogCategory(initialVideoId);
+if (initialVideoId) {
+  lastProcessedVideoId = initialVideoId;
+  initForVideo(initialVideoId);
+}
 
 // ─── SPA Navigation (Primary: service worker relay) ───────────────────────────
 // Service worker detects pushState via webNavigation.onHistoryStateUpdated
 // and sends a YT_NAVIGATION message with the new videoId.
 chrome.runtime.onMessage.addListener((message) => {
   if (message.type === 'YT_NAVIGATION') {
-    fetchAndLogCategory(message.videoId);
+    if (message.videoId === lastProcessedVideoId) return; // deduplicate
+    lastProcessedVideoId = message.videoId;
+
+    // Teardown previous video state
+    resetAllCollapsed();
+    disconnectSidebarObserver();
+    sessionCategoryCache.clear();
+    currentCategoryId = null;
+
+    // Initialize filtering for new video
+    initForVideo(message.videoId);
   }
 });
 
@@ -211,5 +225,15 @@ chrome.runtime.onMessage.addListener((message) => {
 // Use only as a belt-and-suspenders fallback alongside the service worker relay.
 document.addEventListener('yt-navigate-finish', () => {
   const videoId = new URL(window.location.href).searchParams.get('v');
-  fetchAndLogCategory(videoId);
+  if (!videoId || videoId === lastProcessedVideoId) return; // deduplicate
+  lastProcessedVideoId = videoId;
+
+  // Teardown previous video state
+  resetAllCollapsed();
+  disconnectSidebarObserver();
+  sessionCategoryCache.clear();
+  currentCategoryId = null;
+
+  // Initialize filtering for new video
+  initForVideo(videoId);
 });
