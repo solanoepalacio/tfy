@@ -3,8 +3,8 @@
 ## Current Status
 
 **Active Phase:** Phase 4 — Observability & Shorts Suppression
-**Current Plan:** —
-**Progress:** [██████████] v1.0 complete / v1.1 starting
+**Current Plan:** 04-01 complete
+**Progress:** [██████████] 100%
 
 ## Project Reference
 
@@ -20,7 +20,7 @@ See: .planning/PROJECT.md (updated 2026-02-24)
 | 1 | Extension Foundation + Category Detection | Complete | 3/3 | 100% |
 | 2 | Sidebar Filtering | Complete | 2/2 | 100% |
 | 3 | Popup Controls + Toggle Persistence | Complete | 2/2 | 100% |
-| 4 | Observability & Shorts Suppression | Not started | 0/? | 0% |
+| 4 | Observability & Shorts Suppression | Complete | 1/1 | 100% |
 
 ## Decisions
 
@@ -37,6 +37,9 @@ See: .planning/PROJECT.md (updated 2026-02-24)
 - [Phase 03-popup-controls-toggle-persistence]: Separate chrome.storage.local.get calls for apiKey and filteringEnabled kept per existing pattern
 - [Phase 03-popup-controls-toggle-persistence]: Re-enable path checks currentCategoryId first (no API call) before falling back to initForVideo
 - [Phase 03-popup-controls-toggle-persistence]: Human verification in real Chrome browser is required for popup/content-script messaging — automated tests cannot replicate chrome.tabs.sendMessage across popup/tab boundary
+- [Phase 04-observability-shorts-suppression]: CATEGORY_NAMES const maps YouTube category IDs to human-readable names for rich collapsed labels
+- [Phase 04-observability-shorts-suppression]: CSS attr(data-tfy-label) on ::before renders dynamic label from DOM attribute set by collapseElement
+- [Phase 04-observability-shorts-suppression]: Both ytd-reel-shelf-renderer and ytm-shorts-lockup-view-model-v2 targeted for Shorts shelf suppression
 
 ## Recent Activity
 
@@ -50,6 +53,7 @@ See: .planning/PROJECT.md (updated 2026-02-24)
 - 2026-02-24: Completed 03-01 — filtering toggle checkbox in popup with chrome.storage.local persistence and TFY_TOGGLE message handler in content-script
 - 2026-02-24: Completed 03-02 — human-verified end-to-end toggle: OFF reveals sidebar immediately, ON re-collapses within ~1s, state persists across Chrome restart. Phase 3 complete.
 - 2026-02-24: v1.1 roadmap created — Phase 4 (Observability & Shorts Suppression) added covering LABL-01 and SHRT-01
+- 2026-02-24: Completed 04-01 — rich collapsed labels via CATEGORY_NAMES + data-tfy-label, Shorts shelf hidden via CSS. Phase 4 complete.
 
 ## Performance Metrics
 
@@ -62,10 +66,11 @@ See: .planning/PROJECT.md (updated 2026-02-24)
 | 02-sidebar-filtering | 02 | 2min | 1 | 1 |
 | 03-popup-controls-toggle-persistence | 01 | 1min | 2 | 4 |
 | 03-popup-controls-toggle-persistence | 02 | 0min | 1 | 0 |
+| 04-observability-shorts-suppression | 01 | 5min | 2 | 1 |
 
 ## Stopped At
 
-Phase 4 roadmap created. Ready to plan Phase 4 — Observability & Shorts Suppression.
+Completed 04-01-PLAN.md. Phase 4 complete — LABL-01 and SHRT-01 fulfilled. v1.1 milestone complete.
 
 ---
-*Last updated: 2026-02-24 — v1.1 roadmap created, Phase 4 added*
+*Last updated: 2026-02-24 — Phase 4 complete, v1.1 milestone complete*

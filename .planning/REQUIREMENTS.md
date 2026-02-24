@@ -33,11 +33,11 @@ Requirements for current milestone. Each maps to roadmap phases.
 
 ### Label Observability
 
-- [ ] **LABL-01**: Hidden sidebar items display the video's title and category name on the collapsed label (e.g., "hidden: Gaming · How to speedrun Minecraft")
+- [x] **LABL-01**: Hidden sidebar items display the video's title and category name on the collapsed label (e.g., "hidden: Gaming · How to speedrun Minecraft")
 
 ### Shorts Suppression
 
-- [ ] **SHRT-01**: The Shorts shelf panel (ytm-shorts-lockup-view-model-v2) is hidden on all YouTube watch pages
+- [x] **SHRT-01**: The Shorts shelf panel (ytm-shorts-lockup-view-model-v2) is hidden on all YouTube watch pages
 
 ## v2 Requirements
 
@@ -101,8 +101,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | FILT-02 | Phase 2 | Complete |
 | FILT-03 | Phase 2 | Complete |
 | POPU-01 | Phase 3 | Complete |
-| LABL-01 | Phase 4 | Pending |
-| SHRT-01 | Phase 4 | Pending |
+| LABL-01 | Phase 4 | Complete |
+| SHRT-01 | Phase 4 | Complete |
 
 **Coverage (v1.0):**
 - v1.0 requirements: 10 total
