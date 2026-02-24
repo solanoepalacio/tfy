@@ -79,7 +79,27 @@ Plans:
 
 ---
 
+### Phase 4: Observability & Shorts Suppression
+
+**Goal:** Hidden sidebar items reveal what they contain, and the Shorts panel is unconditionally hidden on watch pages — giving the user full awareness of what is filtered and eliminating Shorts as a distraction vector.
+
+**Requirements:**
+- LABL-01: Hidden sidebar items display the video's title and category name on the collapsed label (e.g., "hidden: Gaming · How to speedrun Minecraft")
+- SHRT-01: The Shorts shelf panel (ytm-shorts-lockup-view-model-v2) is hidden on all YouTube watch pages
+
+**Success Criteria:**
+1. When a sidebar suggestion is collapsed, its label shows the video title and category name — not just "hidden: off-topic"
+2. The Shorts shelf panel is not visible anywhere in the sidebar on any YouTube watch page, regardless of filtering state
+3. Label content updates correctly when navigating between videos via SPA navigation
+
+**Dependencies:** Phase 3
+**Plans:** TBD
+
+---
+
 ## Requirement Coverage
+
+### v1.0 Requirements
 
 | Requirement | Phase | Description |
 |-------------|-------|-------------|
@@ -94,10 +114,20 @@ Plans:
 | FILT-03 | Phase 2 | Off-topic suggestions are collapsed via CSS (not removed from DOM) |
 | POPU-01 | Phase 3 | User can toggle filtering on/off from the extension popup |
 
-**Coverage: 10/10 (100%)**
+**v1.0 Coverage: 10/10 (100%)**
+
+### v1.1 Requirements
+
+| Requirement | Phase | Description |
+|-------------|-------|-------------|
+| LABL-01 | Phase 4 | Hidden items display video title and category on the collapsed label |
+| SHRT-01 | Phase 4 | Shorts shelf panel hidden on all YouTube watch pages |
+
+**v1.1 Coverage: 2/2 (100%)**
 
 ---
 *Roadmap created: 2026-02-20*
 *Phase 1 planned: 2026-02-23*
 *Phase 2 planned: 2026-02-23*
 *Phase 3 planned: 2026-02-24*
+*Phase 4 added: 2026-02-24 (v1.1 milestone)*

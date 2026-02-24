@@ -2,9 +2,9 @@
 
 ## Current Status
 
-**Active Phase:** Not started (defining requirements)
+**Active Phase:** Phase 4 — Observability & Shorts Suppression
 **Current Plan:** —
-**Progress:** [░░░░░░░░░░] 0%
+**Progress:** [██████████] v1.0 complete / v1.1 starting
 
 ## Project Reference
 
@@ -20,6 +20,7 @@ See: .planning/PROJECT.md (updated 2026-02-24)
 | 1 | Extension Foundation + Category Detection | Complete | 3/3 | 100% |
 | 2 | Sidebar Filtering | Complete | 2/2 | 100% |
 | 3 | Popup Controls + Toggle Persistence | Complete | 2/2 | 100% |
+| 4 | Observability & Shorts Suppression | Not started | 0/? | 0% |
 
 ## Decisions
 
@@ -48,6 +49,7 @@ See: .planning/PROJECT.md (updated 2026-02-24)
 - 2026-02-24: 02-02 Task 1 done — navigation handlers wired to initForVideo() with lastProcessedVideoId deduplication and teardown cycle; at human-verify checkpoint
 - 2026-02-24: Completed 03-01 — filtering toggle checkbox in popup with chrome.storage.local persistence and TFY_TOGGLE message handler in content-script
 - 2026-02-24: Completed 03-02 — human-verified end-to-end toggle: OFF reveals sidebar immediately, ON re-collapses within ~1s, state persists across Chrome restart. Phase 3 complete.
+- 2026-02-24: v1.1 roadmap created — Phase 4 (Observability & Shorts Suppression) added covering LABL-01 and SHRT-01
 
 ## Performance Metrics
 
@@ -63,7 +65,7 @@ See: .planning/PROJECT.md (updated 2026-02-24)
 
 ## Stopped At
 
-Starting milestone v1.1 — Observability & Shorts Suppression. Requirements and roadmap in progress.
+Phase 4 roadmap created. Ready to plan Phase 4 — Observability & Shorts Suppression.
 
 ---
-*Last updated: 2026-02-24 — Milestone v1.1 started*
+*Last updated: 2026-02-24 — v1.1 roadmap created, Phase 4 added*

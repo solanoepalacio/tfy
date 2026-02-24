@@ -101,6 +101,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | FILT-02 | Phase 2 | Complete |
 | FILT-03 | Phase 2 | Complete |
 | POPU-01 | Phase 3 | Complete |
+| LABL-01 | Phase 4 | Pending |
+| SHRT-01 | Phase 4 | Pending |
 
 **Coverage (v1.0):**
 - v1.0 requirements: 10 total
@@ -109,9 +111,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 **Coverage (v1.1):**
 - v1.1 requirements: 2 total
-- Mapped to phases: TBD (roadmap in progress)
-- Unmapped: 2 ⚠️
+- Mapped to phases: 2
+- Status: Phase 4 pending ✓
 
 ---
 *Requirements defined: 2026-02-20*
-*Last updated: 2026-02-24 after v1.1 milestone start*
+*Last updated: 2026-02-24 — v1.1 requirements mapped to Phase 4*
