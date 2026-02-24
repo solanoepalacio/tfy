@@ -8,12 +8,12 @@ function injectTFYStyles() {
   const style = document.createElement('style');
   style.id = 'tfy-styles';
   style.textContent = `
-    ytd-compact-video-renderer.tfy-hidden {
+    yt-lockup-view-model.tfy-hidden {
       max-height: 20px !important;
       overflow: hidden !important;
       opacity: 0.5;
     }
-    ytd-compact-video-renderer.tfy-hidden::before {
+    yt-lockup-view-model.tfy-hidden::before {
       content: 'hidden: off-topic';
       display: block;
       font-size: 11px;
@@ -56,7 +56,7 @@ let lastProcessedVideoId = null; // prevents double-filtering when both nav sign
 async function filterSidebar() {
   if (!currentCategoryId) return;
 
-  const renderers = Array.from(document.querySelectorAll('ytd-compact-video-renderer'));
+  const renderers = Array.from(document.querySelectorAll('yt-lockup-view-model'));
   const idToRenderer = new Map();
   for (const el of renderers) {
     const id = extractVideoIdFromRenderer(el);
@@ -110,8 +110,8 @@ function observeSidebar(callback) {
       for (const node of mutation.addedNodes) {
         if (!(node instanceof Element)) continue;
         if (
-          node.matches('ytd-compact-video-renderer') ||
-          node.querySelectorAll('ytd-compact-video-renderer').length > 0
+          node.matches('yt-lockup-view-model') ||
+          node.querySelectorAll('yt-lockup-view-model').length > 0
         ) {
           found = true;
           break;
