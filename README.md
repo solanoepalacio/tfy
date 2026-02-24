@@ -2,6 +2,9 @@
 
 Collapses off-topic sidebar suggestions on YouTube watch pages so only same-category videos remain visible — eliminating cross-interest distraction during focused research sessions.
 
+> **TFY was built entirely by AI agents — Claude Code running a GSD (Get Shit Done) agentic workflow — with zero human-written code.**
+>
+> Every phase of the project was planned and executed by Claude agents: the extension scaffold, sidebar filtering logic, popup controls, observability and Shorts suppression, and this README. The human role was product direction only. TFY is an agentic engineering proof-of-concept demonstrating that a complete, functional Chrome extension can be produced end-to-end without a human developer writing a single line of code.
 ---
 
 ## What it does
@@ -21,14 +24,6 @@ Filtering re-runs automatically when you navigate between videos through YouTube
 5. A `MutationObserver` watches for new sidebar items added by YouTube's lazy loading and filters them as they appear.
 
 All API calls are made from the service worker, not the content script, because Chrome's Manifest V3 content scripts cannot call `googleapis.com` directly due to cross-origin restrictions.
-
----
-
-## Agentic POC
-
-> **TFY was built entirely by AI agents — Claude Code running a GSD (Get Shit Done) agentic workflow — with zero human-written code.**
->
-> Every phase of the project was planned and executed by Claude agents: the extension scaffold, sidebar filtering logic, popup controls, observability and Shorts suppression, and this README. The human role was product direction only. TFY is an agentic engineering proof-of-concept demonstrating that a complete, functional Chrome extension can be produced end-to-end without a human developer writing a single line of code.
 
 ---
 
