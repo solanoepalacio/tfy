@@ -136,8 +136,8 @@ async function filterSidebar() {
   for (const [id, el] of idToRenderer.entries()) {
     const cat = sessionCategoryCache.get(id);
     if (cat !== undefined && cat !== currentCategoryId) {
-      const titleEl = el.querySelector('a[href*="watch?v="]');
-      const title = titleEl ? titleEl.getAttribute('aria-label') || titleEl.textContent.trim() : '';
+      const titleEl = el.querySelector('h3 a[href*="watch?v="]') || el.querySelector('h3');
+      const title = titleEl ? titleEl.textContent.trim() : '';
       const categoryName = CATEGORY_NAMES[cat] || cat;
       collapseElement(el, title, categoryName);
       collapsed++;
