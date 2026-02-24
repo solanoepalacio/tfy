@@ -11,6 +11,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   const { filteringEnabled = true } = await chrome.storage.local.get('filteringEnabled');
   document.getElementById('toggle-filtering').checked = filteringEnabled;
+
+  const { currentVideoCategory } = await chrome.storage.local.get('currentVideoCategory');
+  if (currentVideoCategory) {
+    document.getElementById('current-category').textContent = `Watching: ${currentVideoCategory}`;
+  }
 });
 
 document.getElementById('save-btn').addEventListener('click', async () => {

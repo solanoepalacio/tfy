@@ -197,7 +197,9 @@ async function initForVideo(videoId) {
 
   if (response?.categories?.[videoId]) {
     currentCategoryId = response.categories[videoId];
-    console.log(`[TFY] Current video category: ${currentCategoryId}`);
+    const currentCategoryName = CATEGORY_NAMES[currentCategoryId] || currentCategoryId;
+    console.log(`[TFY] Current video category: ${currentCategoryId} (${currentCategoryName})`);
+    chrome.storage.local.set({ currentVideoCategory: currentCategoryName });
   } else {
     console.warn('[TFY] Could not determine current video category — sidebar filtering skipped');
     return;
@@ -284,6 +286,7 @@ chrome.runtime.onMessage.addListener((message) => {
     disconnectSidebarObserver();
     sessionCategoryCache.clear();
     currentCategoryId = null;
+    chrome.storage.local.remove('currentVideoCategory');
 
     // Initialize filtering for new video
     if (filteringEnabled) initForVideo(message.videoId);
