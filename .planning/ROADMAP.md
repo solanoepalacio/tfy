@@ -124,10 +124,10 @@ Plans:
   3. Reader knows exactly what they need before installing (Chrome, Google Cloud project, YouTube Data API v3 key)
   4. Reader can install the extension in Chrome developer mode from a fresh clone using only the README steps
   5. Reader can enter their API key and see the extension filtering their sidebar after following the README
-**Plans**: TBD
+**Plans**: 1 plan
 
 Plans:
-- [ ] 05-01: Write README.md — motivation, agentic POC note, prerequisites, install, configure, usage
+- [ ] 05-01-PLAN.md — Write README.md: motivation, agentic POC note, prerequisites, install, configure, usage
 
 ---
 
