@@ -1,4 +1,4 @@
-# Requirements: TFY2 — Topic Focused YouTube
+# Requirements: TFY — Topic Focused YouTube
 
 **Defined:** 2026-02-24
 **Core Value:** When watching a YouTube video, the sidebar suggestions stay on-topic with what you're currently watching — eliminating cross-interest distraction during focused research sessions.
@@ -7,7 +7,7 @@
 
 ### Documentation
 
-- [ ] **DOC-01**: Reader understands what TFY2 does and why it exists (motivation + problem statement)
+- [ ] **DOC-01**: Reader understands what TFY does and why it exists (motivation + problem statement)
 - [ ] **DOC-02**: Reader understands this extension is a POC built entirely by AI agents as an agentic engineering exercise
 - [ ] **DOC-03**: Reader can identify prerequisites before installing (Chrome, Google Cloud project, YouTube Data API v3 key)
 - [ ] **DOC-04**: Reader can install the extension in Chrome developer mode from a fresh clone
@@ -40,4 +40,4 @@
 
 ---
 *Requirements defined: 2026-02-24*
-*Last updated: 2026-02-24 after initial definition*
+*Last updated: 2026-02-24 — traceability confirmed after roadmap creation*

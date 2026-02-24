@@ -1,10 +1,15 @@
-# Roadmap: TFY2 — Topic Focused YouTube
+# Roadmap: TFY — Topic Focused YouTube
 
-**Created:** 2026-02-20
-**Depth:** Quick (3-5 phases)
-**Requirements:** 10 v1 requirements
+## Milestones
+
+- ✅ **v1.0 MVP** - Phases 1-3 (shipped 2026-02-24)
+- ✅ **v1.1 Observability & Shorts Suppression** - Phase 4 (shipped 2026-02-24)
+- 🚧 **v1.2 Readme Documentation** - Phase 5 (in progress)
 
 ## Phases
+
+<details>
+<summary>✅ v1.0 MVP (Phases 1-3) - SHIPPED 2026-02-24</summary>
 
 ### Phase 1: Extension Foundation + Category Detection
 
@@ -29,7 +34,7 @@
 Plans:
 - [x] 01-01-PLAN.md — Extension scaffold: manifest.json, icons, popup with API key storage
 - [x] 01-02-PLAN.md — Data pipeline: service-worker.js (API proxy + nav relay) + content-script.js (video ID + category log)
-- [ ] 01-03-PLAN.md — Human verification: end-to-end test in Chrome browser
+- [x] 01-03-PLAN.md — Human verification: end-to-end test in Chrome browser
 
 ---
 
@@ -52,8 +57,8 @@ Plans:
 **Plans:** 2/2 plans complete
 
 Plans:
-- [ ] 02-01-PLAN.md — Sidebar filtering engine: CSS injection, video ID extraction, session cache, filterSidebar(), MutationObserver, initForVideo()
-- [ ] 02-02-PLAN.md — Navigation wiring + human verification: wire initForVideo() to all navigation handlers with deduplication
+- [x] 02-01-PLAN.md — Sidebar filtering engine: CSS injection, video ID extraction, session cache, filterSidebar(), MutationObserver, initForVideo()
+- [x] 02-02-PLAN.md — Navigation wiring + human verification: wire initForVideo() to all navigation handlers with deduplication
 
 ---
 
@@ -74,10 +79,13 @@ Plans:
 **Plans:** 2/2 plans complete
 
 Plans:
-- [ ] 03-01-PLAN.md — Toggle implementation: popup checkbox UI, storage persistence, content script startup guard and TFY_TOGGLE handler
-- [ ] 03-02-PLAN.md — Human verification: end-to-end toggle test in Chrome browser
+- [x] 03-01-PLAN.md — Toggle implementation: popup checkbox UI, storage persistence, content script startup guard and TFY_TOGGLE handler
+- [x] 03-02-PLAN.md — Human verification: end-to-end toggle test in Chrome browser
 
----
+</details>
+
+<details>
+<summary>✅ v1.1 Observability & Shorts Suppression (Phase 4) - SHIPPED 2026-02-24</summary>
 
 ### Phase 4: Observability & Shorts Suppression
 
@@ -93,11 +101,33 @@ Plans:
 3. Label content updates correctly when navigating between videos via SPA navigation
 
 **Dependencies:** Phase 3
-**Plans:** 1/2 plans executed
+**Plans:** 1/1 plans complete
 
 Plans:
-- [ ] 04-01-PLAN.md — Rich labels (LABL-01) + Shorts suppression (SHRT-01): update content-script.js CSS and filtering logic
-- [ ] 04-02-PLAN.md — Human verification: confirm labels and Shorts suppression in real Chrome
+- [x] 04-01-PLAN.md — Rich labels (LABL-01) + Shorts suppression (SHRT-01): update content-script.js CSS and filtering logic
+
+</details>
+
+### 🚧 v1.2 Readme Documentation (In Progress)
+
+**Milestone Goal:** Write a complete README that explains the extension's motivation, the agentic POC origin, and guides a new user through install, API key setup, and daily usage.
+
+#### Phase 5: Write README
+
+**Goal:** A reader with no prior context can understand what TFY is, why it exists, and how to install, configure, and use it — entirely from the README.
+
+**Depends on**: Phase 4
+**Requirements**: DOC-01, DOC-02, DOC-03, DOC-04, DOC-05, DOC-06
+**Success Criteria** (what must be TRUE):
+  1. Reader can state what TFY does and what problem it solves without looking at any other file
+  2. Reader understands the extension was built entirely by AI agents as an agentic engineering POC
+  3. Reader knows exactly what they need before installing (Chrome, Google Cloud project, YouTube Data API v3 key)
+  4. Reader can install the extension in Chrome developer mode from a fresh clone using only the README steps
+  5. Reader can enter their API key and see the extension filtering their sidebar after following the README
+**Plans**: TBD
+
+Plans:
+- [ ] 05-01: Write README.md — motivation, agentic POC note, prerequisites, install, configure, usage
 
 ---
 
@@ -129,9 +159,33 @@ Plans:
 
 **v1.1 Coverage: 2/2 (100%)**
 
+### v1.2 Requirements
+
+| Requirement | Phase | Description |
+|-------------|-------|-------------|
+| DOC-01 | Phase 5 | Reader understands what TFY does and why it exists |
+| DOC-02 | Phase 5 | Reader understands this is a POC built entirely by AI agents |
+| DOC-03 | Phase 5 | Reader can identify prerequisites before installing |
+| DOC-04 | Phase 5 | Reader can install the extension in Chrome developer mode from a fresh clone |
+| DOC-05 | Phase 5 | Reader can configure the extension by entering their API key in the popup |
+| DOC-06 | Phase 5 | Reader understands daily usage — filtering, toggle, collapsed labels, Shorts suppression |
+
+**v1.2 Coverage: 6/6 (100%)**
+
+## Progress
+
+| Phase | Milestone | Plans Complete | Status | Completed |
+|-------|-----------|----------------|--------|-----------|
+| 1. Extension Foundation + Category Detection | v1.0 | 3/3 | Complete | 2026-02-24 |
+| 2. Sidebar Filtering | v1.0 | 2/2 | Complete | 2026-02-24 |
+| 3. Popup Controls + Toggle Persistence | v1.0 | 2/2 | Complete | 2026-02-24 |
+| 4. Observability & Shorts Suppression | v1.1 | 1/1 | Complete | 2026-02-24 |
+| 5. Write README | v1.2 | 0/1 | Not started | - |
+
 ---
 *Roadmap created: 2026-02-20*
 *Phase 1 planned: 2026-02-23*
 *Phase 2 planned: 2026-02-23*
 *Phase 3 planned: 2026-02-24*
 *Phase 4 added: 2026-02-24 (v1.1 milestone)*
+*Phase 5 added: 2026-02-24 (v1.2 milestone)*

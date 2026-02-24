@@ -1,4 +1,4 @@
-# TFY2 — Topic Focused YouTube
+# TFY — Topic Focused YouTube
 
 ## What This Is
 
