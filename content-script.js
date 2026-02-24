@@ -143,7 +143,6 @@ async function filterSidebar() {
       collapsed++;
     }
   }
-  console.log(`[TFY] Sidebar filter: collapsed ${collapsed} of ${total} suggestions`);
 }
 
 function observeSidebar(callback) {
