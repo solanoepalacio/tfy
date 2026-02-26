@@ -176,7 +176,11 @@ Plans:
   3. User closes a non-YouTube tab (e.g., Gmail) — the popup's category display for open YouTube tabs is unaffected
   4. User switches between YouTube watch tabs — the popup updates to reflect the newly active tab's video category
 
-**Plans:** TBD
+**Plans:** 2 plans
+
+Plans:
+- [ ] 07-01-PLAN.md — Storage key migration + onRemoved cleanup + popup scoped read (manifest.json, service-worker.js, content-script.js, popup.js)
+- [ ] 07-02-PLAN.md — Human verification: TABST-01, TABST-02, TABST-03 in live Chrome browser
 
 ---
 
