@@ -8,10 +8,10 @@
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-02-26)
+See: .planning/PROJECT.md (updated 2026-02-26 after v1.3 milestone)
 
 **Core value:** When watching a YouTube video, the sidebar suggestions stay on-topic with what you're currently watching.
-**Current focus:** v1.3 — Bug Fixes (Phase 7: Tab Lifecycle Fix + Multi-Tab Storage Scoping)
+**Current focus:** Planning next milestone — run `/gsd:new-milestone` to define v1.4 or v2.0
 
 ## Phase Status
 
@@ -56,10 +56,11 @@ See: .planning/PROJECT.md (updated 2026-02-26)
 - 2026-02-26: Completed 06-02 — Human verified all 5 SPA navigation test scenarios in Chrome. Phase 6 complete.
 - 2026-02-26: Completed 07-01 — Per-tab storage scoping implemented. TABST-01, TABST-02, TABST-03 fixed. Four files modified.
 - 2026-02-26: Completed 07-02 — Human verified all four test scenarios in Chrome (TABST-01, TABST-02, TABST-03, regression). Phase 7 complete. v1.3 milestone complete.
+- 2026-02-26: v1.3 milestone archived — ROADMAP.md and REQUIREMENTS.md archived to .planning/milestones/
 
 ## Stopped At
 
-Completed 07-02-PLAN.md — Human verification approved. All TABST requirements satisfied. Phase 7 complete. v1.3 milestone complete.
+v1.3 milestone complete and archived. All requirements satisfied (SPAV-01, SPAV-02, TABST-01, TABST-02, TABST-03). Ready for next milestone.
 
 ---
-*Last updated: 2026-02-26 — Phase 7 complete, v1.3 milestone complete (SPAV-01, SPAV-02, TABST-01, TABST-02, TABST-03)*
+*Last updated: 2026-02-26 — v1.3 milestone complete (SPAV-01, SPAV-02, TABST-01, TABST-02, TABST-03)*
