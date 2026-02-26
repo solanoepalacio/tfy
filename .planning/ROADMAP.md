@@ -176,7 +176,7 @@ Plans:
   3. User closes a non-YouTube tab (e.g., Gmail) — the popup's category display for open YouTube tabs is unaffected
   4. User switches between YouTube watch tabs — the popup updates to reflect the newly active tab's video category
 
-**Plans:** 2 plans
+**Plans:** 1/2 plans executed
 
 Plans:
 - [ ] 07-01-PLAN.md — Storage key migration + onRemoved cleanup + popup scoped read (manifest.json, service-worker.js, content-script.js, popup.js)
@@ -247,7 +247,7 @@ Plans:
 | 4. Observability & Shorts Suppression | v1.1 | 1/1 | Complete | 2026-02-24 |
 | 5. Write README | v1.2 | 1/1 | Complete | 2026-02-24 |
 | 6. SPA Navigation Fix | 2/2 | Complete   | 2026-02-26 | - |
-| 7. Tab Lifecycle Fix + Multi-Tab Storage Scoping | v1.3 | 0/TBD | Not started | - |
+| 7. Tab Lifecycle Fix + Multi-Tab Storage Scoping | 1/2 | In Progress|  | - |
 
 ---
 *Roadmap created: 2026-02-20*

@@ -3,8 +3,8 @@
 ## Current Status
 
 **Active Phase:** Phase 7 — Tab Lifecycle Fix + Multi-Tab Storage Scoping
-**Current Plan:** Not started
-**Progress:** [█████████░] 92%
+**Current Plan:** Plan 1 complete (07-01)
+**Progress:** [█████████░] 86%
 
 ## Project Reference
 
@@ -23,7 +23,7 @@ See: .planning/PROJECT.md (updated 2026-02-26)
 | 4 | Observability & Shorts Suppression | Complete | 1/1 | 100% |
 | 5 | Write README | Complete | 1/1 | 100% |
 | 6 | SPA Navigation Fix | Complete | 2/2 | 100% |
-| 7 | Tab Lifecycle Fix + Multi-Tab Storage Scoping | Not started | 0/TBD | 0% |
+| 7 | Tab Lifecycle Fix + Multi-Tab Storage Scoping | In Progress | 1/TBD | 50% |
 
 ## Decisions
 
@@ -42,6 +42,9 @@ See: .planning/PROJECT.md (updated 2026-02-26)
 - [Phase 06-spa-navigation-fix]: injectTFYStyles moved inside IIFE/nav handlers — prevents ytd-reel-shelf-renderer:display:none from applying on YouTube homepage (out of scope)
 - [Phase 06-spa-navigation-fix]: initForVideo calls disconnectSidebarObserver() as first line — correct teardown point for rapid navigation race prevention
 - [Phase 06-spa-navigation-fix]: All 5 SPA navigation test scenarios confirmed passing in Chrome browser — SPAV-01 and SPAV-02 verified by human
+- [Phase 07]: Delegate pattern chosen for content-script category writes — service worker has authoritative sender.tab.id
+- [Phase 07]: onRemoved registered at top level — MV3 service workers only re-register synchronous top-level listeners on restart
+- [Phase 07]: Per-tab storage key currentVideoCategory_${tabId} replaces single shared key — fixes TABST-01, TABST-02, TABST-03 at root cause
 
 ## Recent Activity
 
@@ -50,10 +53,11 @@ See: .planning/PROJECT.md (updated 2026-02-26)
 - 2026-02-26: v1.3 roadmap created — Phases 6 and 7 added; 100% requirement coverage
 - 2026-02-26: Completed 06-01 — Manifest match expanded, observer hardened, initForVideo idempotent, dead code removed. SPAV-01 and SPAV-02 complete.
 - 2026-02-26: Completed 06-02 — Human verified all 5 SPA navigation test scenarios in Chrome. Phase 6 complete.
+- 2026-02-26: Completed 07-01 — Per-tab storage scoping implemented. TABST-01, TABST-02, TABST-03 fixed. Four files modified.
 
 ## Stopped At
 
-Completed 06-02-PLAN.md — Phase 6 complete. Ready to plan and execute Phase 7 (Tab Lifecycle Fix + Multi-Tab Storage Scoping).
+Completed 07-01-PLAN.md — Per-tab storage key migration complete. TABST-01/02/03 requirements satisfied. Ready for human verification of Phase 7.
 
 ---
-*Last updated: 2026-02-26 — 06-02 human verification approved, Phase 6 complete*
+*Last updated: 2026-02-26 — 07-01 complete, per-tab storage scoping implemented*

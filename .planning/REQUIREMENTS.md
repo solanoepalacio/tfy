@@ -25,9 +25,9 @@ Bug-fix release. No new user-facing features. Fixes two runtime correctness fail
 
 ### Tab State
 
-- [ ] **TABST-01**: Popup clears the category display when the associated YouTube watch tab is closed
-- [ ] **TABST-02**: Popup shows the correct category for the currently active YouTube tab when multiple YouTube tabs are open
-- [ ] **TABST-03**: Closing a non-YouTube tab (e.g., Gmail) does not affect the popup's category display
+- [x] **TABST-01**: Popup clears the category display when the associated YouTube watch tab is closed
+- [x] **TABST-02**: Popup shows the correct category for the currently active YouTube tab when multiple YouTube tabs are open
+- [x] **TABST-03**: Closing a non-YouTube tab (e.g., Gmail) does not affect the popup's category display
 
 ## Future Requirements
 
@@ -61,9 +61,9 @@ Bug-fix release. No new user-facing features. Fixes two runtime correctness fail
 | DOC-06 | Phase 5 | Complete |
 | SPAV-01 | Phase 6 | Complete |
 | SPAV-02 | Phase 6 | Complete |
-| TABST-01 | Phase 7 | Pending |
-| TABST-02 | Phase 7 | Pending |
-| TABST-03 | Phase 7 | Pending |
+| TABST-01 | Phase 7 | Complete |
+| TABST-02 | Phase 7 | Complete |
+| TABST-03 | Phase 7 | Complete |
 
 **Coverage:**
 - v1.2 requirements: 6 total — all complete ✓
