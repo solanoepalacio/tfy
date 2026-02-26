@@ -26,31 +26,35 @@ key-files:
 
 key-decisions:
   - "Human verification checkpoint — Chrome extension behavior cannot be verified by automated tests; live browser session required"
+  - "All 5 test scenarios confirmed passing in Chrome: homepage-to-watch, related video click, back/forward, Shorts shelf regression, rapid navigation stress test"
 
 patterns-established: []
 
 requirements-completed: [SPAV-01, SPAV-02]
 
 # Metrics
-duration: pending-human-verification
+duration: human-verification-session
 completed: 2026-02-26
 ---
 
 # Phase 6 Plan 02: SPA Navigation Fix Human Verification Summary
 
-**Human browser verification of SPA navigation fix — 5 test scenarios covering homepage-to-watch, related video clicks, back/forward navigation, homepage Shorts shelf regression, and rapid navigation stress test**
+**All 5 SPA navigation test scenarios confirmed passing in a live Chrome browser — SPAV-01 and SPAV-02 verified, Phase 6 complete**
 
 ## Performance
 
-- **Duration:** Pending human verification
+- **Duration:** Human verification session
 - **Started:** 2026-02-26T15:22:37Z
-- **Completed:** Pending
-- **Tasks:** 0/1 (1 checkpoint awaiting human)
+- **Completed:** 2026-02-26
+- **Tasks:** 1/1 (checkpoint approved)
 - **Files modified:** 0
 
 ## Accomplishments
-- Plan 06-01 delivered all code changes (manifest match expansion, observer hardening, idempotent initForVideo, watch-page CSS guard)
-- This plan provides structured verification steps for human confirmation in a real Chrome browser
+- Human confirmed all 5 verification scenarios passed in a live Chrome browser with DevTools console open
+- SPAV-01 verified: filtering activates automatically when navigating from youtube.com homepage to a watch page without a full page reload
+- SPAV-02 verified: filtering activates on related video clicks and browser back/forward navigation without a full page reload
+- Rapid navigation stress test passed: exactly one "[TFY] Current video category:" log line per final video after clicking 3-4 related videos in quick succession
+- Shorts shelf regression check passed: visible on homepage, hidden on watch pages
 
 ## Task Commits
 
@@ -61,6 +65,7 @@ None — this plan is human verification only.
 
 ## Decisions Made
 - Chrome extension integration tests cannot be automated — live browser verification is required for correct behavior of content script injection, service worker relay, and SPA navigation handling
+- Verification confirmed the hardened observer teardown (sidebarObserverRetryTimer) prevents duplicate "[TFY]" log lines on rapid navigation
 
 ## Deviations from Plan
 
@@ -71,15 +76,13 @@ None
 
 ## User Setup Required
 
-**Chrome browser verification required.** See checkpoint below for exact steps:
-- Reload extension at chrome://extensions
-- Test 5 navigation scenarios in YouTube with DevTools console open
-- Confirm "[TFY] Current video category:" log appears exactly once per navigation
+None - no external service configuration required.
 
 ## Next Phase Readiness
-- After human approves verification, Phase 6 is complete
+- Phase 6 complete — SPA navigation fix verified and confirmed working in Chrome
 - Phase 7 (Tab Lifecycle Fix + Multi-Tab Storage Scoping) can proceed — manifest match expansion prerequisite is satisfied
+- SPAV-01 and SPAV-02 requirements both verified and closed
 
 ---
 *Phase: 06-spa-navigation-fix*
-*Completed: 2026-02-26 (pending human verification)*
+*Completed: 2026-02-26*

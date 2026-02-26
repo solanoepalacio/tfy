@@ -157,8 +157,8 @@ Plans:
 **Plans:** 2/2 plans complete
 
 Plans:
-- [ ] 06-01-PLAN.md — Manifest match expansion + content-script.js hardening: timer tracking, idempotent initForVideo, watch-page CSS guard, dead code removal
-- [ ] 06-02-PLAN.md — Human verification: SPA navigation fix confirmed in real Chrome browser
+- [x] 06-01-PLAN.md — Manifest match expansion + content-script.js hardening: timer tracking, idempotent initForVideo, watch-page CSS guard, dead code removal
+- [x] 06-02-PLAN.md — Human verification: SPA navigation fix confirmed in real Chrome browser
 
 ---
 
