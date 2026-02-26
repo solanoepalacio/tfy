@@ -4,7 +4,7 @@
 
 **Active Phase:** Phase 6 — SPA Navigation Fix
 **Current Plan:** Plan 01 complete — ready for Phase 7
-**Progress:** [████████░░] 83%
+**Progress:** [█████████░] 92%
 
 ## Project Reference
 
@@ -22,7 +22,7 @@ See: .planning/PROJECT.md (updated 2026-02-26)
 | 3 | Popup Controls + Toggle Persistence | Complete | 2/2 | 100% |
 | 4 | Observability & Shorts Suppression | Complete | 1/1 | 100% |
 | 5 | Write README | Complete | 1/1 | 100% |
-| 6 | SPA Navigation Fix | In Progress | 1/1 | 100% |
+| 6 | SPA Navigation Fix | In Progress | 2/2 | 100% |
 | 7 | Tab Lifecycle Fix + Multi-Tab Storage Scoping | Not started | 0/TBD | 0% |
 
 ## Decisions
@@ -51,7 +51,7 @@ See: .planning/PROJECT.md (updated 2026-02-26)
 
 ## Stopped At
 
-Completed 06-spa-navigation-fix-01-PLAN.md. Ready for Phase 7.
+Reached checkpoint in 06-02-PLAN.md — awaiting human verification of SPA navigation fix in Chrome browser (5 test scenarios).
 
 ---
-*Last updated: 2026-02-26 — 06-01 complete (SPAV-01, SPAV-02 done)*
+*Last updated: 2026-02-26 — 06-02 checkpoint reached (human verification pending)*
