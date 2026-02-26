@@ -2,16 +2,16 @@
 
 ## Current Status
 
-**Active Phase:** Phase 5 — Write README (Complete)
-**Current Plan:** Not started
-**Progress:** [██████████] 100%
+**Active Phase:** Not started (defining requirements)
+**Current Plan:** —
+**Progress:** [░░░░░░░░░░] 0%
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-02-24)
+See: .planning/PROJECT.md (updated 2026-02-26)
 
 **Core value:** When watching a YouTube video, the sidebar suggestions stay on-topic with what you're currently watching.
-**Current focus:** v1.2 — Readme Documentation (Phase 5)
+**Current focus:** v1.3 — Bug Fixes (defining requirements)
 
 ## Phase Status
 
@@ -36,13 +36,12 @@ See: .planning/PROJECT.md (updated 2026-02-24)
 
 ## Recent Activity
 
-- 2026-02-24: Completed 04-01 — rich collapsed labels via CATEGORY_NAMES + data-tfy-label, Shorts shelf hidden via CSS. Phase 4 complete.
-- 2026-02-24: v1.2 roadmap created — Phase 5 (Write README) added covering DOC-01 through DOC-06
 - 2026-02-24: Completed 05-01 — README.md written and human cold-read approved. Phase 5 complete. v1.2 milestone complete.
+- 2026-02-26: v1.3 milestone started — defining requirements for tab state + SPA navigation bug fixes
 
 ## Stopped At
 
-Completed 05-01-PLAN.md — Phase 5 Write README complete. All v1.2 requirements (DOC-01 through DOC-06) satisfied.
+v1.3 milestone started. Defining requirements.
 
 ---
-*Last updated: 2026-02-24 — v1.2 milestone complete. README.md written and approved.*
+*Last updated: 2026-02-26 — Milestone v1.3 started*

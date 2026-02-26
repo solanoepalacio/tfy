@@ -8,17 +8,14 @@ A personal-use Chrome browser extension that filters YouTube's sidebar suggestio
 
 When watching a YouTube video, the sidebar suggestions stay on-topic with what you're currently watching — eliminating cross-interest distraction during focused research sessions.
 
-## Current Milestone: v1.2 Readme Documentation
+## Current Milestone: v1.3 Bug Fixes
 
-**Goal:** Write a complete README that explains the extension's motivation, the agentic POC origin, and guides a new user through install, API key setup, and daily usage.
+**Goal:** Fix two runtime bugs — stale category state persisting in the popup after tab close, and YouTube SPA navigation not triggering filtering without a full page reload.
 
 **Target features:**
-- README explains motivation (topic-isolation, cross-interest distraction problem)
-- README notes this POC was built entirely by AI agents as an agentic engineering exercise
-- README covers prerequisites (Chrome, Google Cloud project, API key)
-- README provides step-by-step installation (clone/download, load unpacked in dev mode)
-- README covers configuration (entering the API key in the popup)
-- README covers daily usage (filtering behavior, toggle, collapsed labels, Shorts suppression)
+- Popup clears stale category state when video tab is closed
+- Multi-tab behavior: popup reflects the correct tab's category, not stale state from closed tabs
+- Filtering activates automatically on SPA navigation (YouTube homepage → watch page, and all in-app navigation)
 
 ## Requirements
 
@@ -31,10 +28,13 @@ When watching a YouTube video, the sidebar suggestions stay on-topic with what y
 - ✓ Store and use a personal YouTube Data API v3 key — v1.0
 - ✓ Hidden sidebar items display the video's title and category on the collapsed label — v1.1
 - ✓ Shorts shelf panel is hidden on YouTube watch pages — v1.1
+- ✓ README.md documents motivation, agentic POC origin, prerequisites, install, setup, and usage — v1.2
 
 ### Active
 
-- [ ] README.md documents motivation, agentic POC origin, prerequisites, install, setup, and usage
+- [ ] Popup clears category state when the associated video tab is closed
+- [ ] Popup shows correct category for the currently active YouTube tab when multiple tabs are open
+- [ ] Filtering activates automatically on YouTube SPA navigation without requiring a page reload
 
 ### Out of Scope
 
@@ -69,4 +69,4 @@ When watching a YouTube video, the sidebar suggestions stay on-topic with what y
 | Personal API key stored in extension | Developer-only use, no need for OAuth or key management UI | — Pending |
 
 ---
-*Last updated: 2026-02-24 after v1.2 milestone start*
+*Last updated: 2026-02-26 after v1.3 milestone start*
