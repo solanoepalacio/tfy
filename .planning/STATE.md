@@ -2,16 +2,16 @@
 
 ## Current Status
 
-**Active Phase:** Not started (defining requirements)
-**Current Plan:** —
-**Progress:** [░░░░░░░░░░] 0%
+**Active Phase:** Phase 6 — SPA Navigation Fix
+**Current Plan:** None started
+**Progress:** [████████░░] 71% (5 of 7 phases complete)
 
 ## Project Reference
 
 See: .planning/PROJECT.md (updated 2026-02-26)
 
 **Core value:** When watching a YouTube video, the sidebar suggestions stay on-topic with what you're currently watching.
-**Current focus:** v1.3 — Bug Fixes (defining requirements)
+**Current focus:** v1.3 — Bug Fixes (Phase 6: SPA Navigation Fix)
 
 ## Phase Status
 
@@ -22,6 +22,8 @@ See: .planning/PROJECT.md (updated 2026-02-26)
 | 3 | Popup Controls + Toggle Persistence | Complete | 2/2 | 100% |
 | 4 | Observability & Shorts Suppression | Complete | 1/1 | 100% |
 | 5 | Write README | Complete | 1/1 | 100% |
+| 6 | SPA Navigation Fix | Not started | 0/TBD | 0% |
+| 7 | Tab Lifecycle Fix + Multi-Tab Storage Scoping | Not started | 0/TBD | 0% |
 
 ## Decisions
 
@@ -33,15 +35,19 @@ See: .planning/PROJECT.md (updated 2026-02-26)
 - [Phase 04-observability-shorts-suppression]: CSS attr(data-tfy-label) on ::before renders dynamic label from DOM attribute set by collapseElement
 - [Phase 05-write-readme]: Pointed readers to console.cloud.google.com for API key setup without walking through GCP UI — avoids staleness, respects reader's prior knowledge
 - [Phase 05-write-readme]: Used blockquote for agentic POC callout to make it visually distinct from prose sections
+- [v1.3 roadmap]: Phase 6 before Phase 7 — manifest match expansion is prerequisite for popup-to-content-script messaging used in tab state fix; SPA fix independently verifiable
+- [v1.3 roadmap]: TABST-01/02/03 bundled in Phase 7 — per-tab storage key schema change (currentVideoCategory_${tabId}) and onRemoved cleanup must land as a unit; split creates new mismatches
+- [v1.3 roadmap]: Hardening requirements (HARD-01 session mirror, HARD-02 startup sweep) deferred to Future Requirements — not required for correctness, only long-session resilience
 
 ## Recent Activity
 
 - 2026-02-24: Completed 05-01 — README.md written and human cold-read approved. Phase 5 complete. v1.2 milestone complete.
-- 2026-02-26: v1.3 milestone started — defining requirements for tab state + SPA navigation bug fixes
+- 2026-02-26: v1.3 milestone started — requirements defined (SPAV-01, SPAV-02, TABST-01, TABST-02, TABST-03)
+- 2026-02-26: v1.3 roadmap created — Phases 6 and 7 added; 100% requirement coverage
 
 ## Stopped At
 
-v1.3 milestone started. Defining requirements.
+v1.3 roadmap complete. Ready to plan Phase 6.
 
 ---
-*Last updated: 2026-02-26 — Milestone v1.3 started*
+*Last updated: 2026-02-26 — v1.3 roadmap created (Phases 6-7)*

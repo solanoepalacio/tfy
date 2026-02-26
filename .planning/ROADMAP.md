@@ -4,7 +4,8 @@
 
 - ✅ **v1.0 MVP** - Phases 1-3 (shipped 2026-02-24)
 - ✅ **v1.1 Observability & Shorts Suppression** - Phase 4 (shipped 2026-02-24)
-- 🚧 **v1.2 Readme Documentation** - Phase 5 (in progress)
+- ✅ **v1.2 Readme Documentation** - Phase 5 (shipped 2026-02-24)
+- 🚧 **v1.3 Bug Fixes** - Phases 6-7 (in progress)
 
 ## Phases
 
@@ -108,11 +109,10 @@ Plans:
 
 </details>
 
-### 🚧 v1.2 Readme Documentation (In Progress)
+<details>
+<summary>✅ v1.2 Readme Documentation (Phase 5) - SHIPPED 2026-02-24</summary>
 
-**Milestone Goal:** Write a complete README that explains the extension's motivation, the agentic POC origin, and guides a new user through install, API key setup, and daily usage.
-
-#### Phase 5: Write README
+### Phase 5: Write README
 
 **Goal:** A reader with no prior context can understand what TFY is, why it exists, and how to install, configure, and use it — entirely from the README.
 
@@ -124,10 +124,55 @@ Plans:
   3. Reader knows exactly what they need before installing (Chrome, Google Cloud project, YouTube Data API v3 key)
   4. Reader can install the extension in Chrome developer mode from a fresh clone using only the README steps
   5. Reader can enter their API key and see the extension filtering their sidebar after following the README
-**Plans**: 1 plan
+**Plans**: 1/1 plans complete
 
 Plans:
-- [ ] 05-01-PLAN.md — Write README.md: motivation, agentic POC note, prerequisites, install, configure, usage
+- [x] 05-01-PLAN.md — Write README.md: motivation, agentic POC note, prerequisites, install, configure, usage
+
+</details>
+
+### 🚧 v1.3 Bug Fixes (In Progress)
+
+**Milestone Goal:** Fix two runtime bugs — filtering silently not activating on SPA navigation from non-watch pages, and the popup displaying stale category state after a YouTube tab is closed or when multiple tabs are open.
+
+- [ ] **Phase 6: SPA Navigation Fix** - Content script activates on all YouTube pages; filtering triggers automatically from the homepage
+- [ ] **Phase 7: Tab Lifecycle Fix + Multi-Tab Storage Scoping** - Popup clears on tab close; popup shows the active tab's category; non-YouTube tab closes have no effect
+
+## Phase Details
+
+### Phase 6: SPA Navigation Fix
+
+**Goal:** Filtering activates automatically whenever the user navigates to a YouTube watch page — from the homepage, from search, from clicking related videos — without requiring a full page reload.
+
+**Depends on:** Phase 5
+
+**Requirements:** SPAV-01, SPAV-02
+
+**Success Criteria** (what must be TRUE):
+  1. User navigates from youtube.com (homepage) to a watch page by clicking a video — filtering activates without a page reload
+  2. User clicks a related video in the sidebar — filtering re-activates for the new video without a page reload
+  3. User uses browser back/forward buttons between YouTube watch pages — filtering activates for the destination video each time
+  4. Navigating between YouTube pages does not attach duplicate observers (exactly one category log line appears per navigation in the console)
+
+**Plans:** TBD
+
+---
+
+### Phase 7: Tab Lifecycle Fix + Multi-Tab Storage Scoping
+
+**Goal:** The popup accurately reflects the state of the currently active YouTube tab — showing the correct category when multiple tabs are open, and clearing to a neutral state when the associated tab is closed.
+
+**Depends on:** Phase 6
+
+**Requirements:** TABST-01, TABST-02, TABST-03
+
+**Success Criteria** (what must be TRUE):
+  1. User closes a YouTube watch tab — the popup shows no category (neutral state) the next time it is opened
+  2. User has two YouTube watch tabs open with different videos — the popup shows the category of whichever tab is currently active
+  3. User closes a non-YouTube tab (e.g., Gmail) — the popup's category display for open YouTube tabs is unaffected
+  4. User switches between YouTube watch tabs — the popup updates to reflect the newly active tab's video category
+
+**Plans:** TBD
 
 ---
 
@@ -172,6 +217,18 @@ Plans:
 
 **v1.2 Coverage: 6/6 (100%)**
 
+### v1.3 Requirements
+
+| Requirement | Phase | Description |
+|-------------|-------|-------------|
+| SPAV-01 | Phase 6 | Filtering activates automatically on homepage-to-watch-page SPA navigation |
+| SPAV-02 | Phase 6 | Filtering activates automatically on any in-app YouTube navigation to a watch page |
+| TABST-01 | Phase 7 | Popup clears category display when the associated YouTube watch tab is closed |
+| TABST-02 | Phase 7 | Popup shows correct category for the currently active YouTube tab when multiple tabs open |
+| TABST-03 | Phase 7 | Closing a non-YouTube tab does not affect the popup's category display |
+
+**v1.3 Coverage: 5/5 (100%)**
+
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
@@ -180,7 +237,9 @@ Plans:
 | 2. Sidebar Filtering | v1.0 | 2/2 | Complete | 2026-02-24 |
 | 3. Popup Controls + Toggle Persistence | v1.0 | 2/2 | Complete | 2026-02-24 |
 | 4. Observability & Shorts Suppression | v1.1 | 1/1 | Complete | 2026-02-24 |
-| 5. Write README | 1/1 | Complete    | 2026-02-24 | - |
+| 5. Write README | v1.2 | 1/1 | Complete | 2026-02-24 |
+| 6. SPA Navigation Fix | v1.3 | 0/TBD | Not started | - |
+| 7. Tab Lifecycle Fix + Multi-Tab Storage Scoping | v1.3 | 0/TBD | Not started | - |
 
 ---
 *Roadmap created: 2026-02-20*
@@ -189,3 +248,4 @@ Plans:
 *Phase 3 planned: 2026-02-24*
 *Phase 4 added: 2026-02-24 (v1.1 milestone)*
 *Phase 5 added: 2026-02-24 (v1.2 milestone)*
+*Phases 6-7 added: 2026-02-26 (v1.3 milestone)*
