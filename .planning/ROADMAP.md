@@ -154,7 +154,11 @@ Plans:
   3. User uses browser back/forward buttons between YouTube watch pages — filtering activates for the destination video each time
   4. Navigating between YouTube pages does not attach duplicate observers (exactly one category log line appears per navigation in the console)
 
-**Plans:** TBD
+**Plans:** 2 plans
+
+Plans:
+- [ ] 06-01-PLAN.md — Manifest match expansion + content-script.js hardening: timer tracking, idempotent initForVideo, watch-page CSS guard, dead code removal
+- [ ] 06-02-PLAN.md — Human verification: SPA navigation fix confirmed in real Chrome browser
 
 ---
 
@@ -238,7 +242,7 @@ Plans:
 | 3. Popup Controls + Toggle Persistence | v1.0 | 2/2 | Complete | 2026-02-24 |
 | 4. Observability & Shorts Suppression | v1.1 | 1/1 | Complete | 2026-02-24 |
 | 5. Write README | v1.2 | 1/1 | Complete | 2026-02-24 |
-| 6. SPA Navigation Fix | v1.3 | 0/TBD | Not started | - |
+| 6. SPA Navigation Fix | v1.3 | 0/2 | Not started | - |
 | 7. Tab Lifecycle Fix + Multi-Tab Storage Scoping | v1.3 | 0/TBD | Not started | - |
 
 ---
@@ -249,3 +253,4 @@ Plans:
 *Phase 4 added: 2026-02-24 (v1.1 milestone)*
 *Phase 5 added: 2026-02-24 (v1.2 milestone)*
 *Phases 6-7 added: 2026-02-26 (v1.3 milestone)*
+*Phase 6 planned: 2026-02-26*
