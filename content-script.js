@@ -201,7 +201,11 @@ async function initForVideo(videoId) {
     currentCategoryId = response.categories[videoId];
     const currentCategoryName = CATEGORY_NAMES[currentCategoryId] || currentCategoryId;
     console.log(`[TFY] Current video category: ${currentCategoryId} (${currentCategoryName})`);
-    chrome.storage.local.set({ currentVideoCategory: currentCategoryName });
+    // Delegate storage write to service worker — it has sender.tab.id, content scripts do not
+    chrome.runtime.sendMessage({
+      type: 'SET_VIDEO_CATEGORY',
+      categoryName: currentCategoryName
+    }).catch(() => {}); // Non-fatal — popup shows blank if this fails
   } else {
     console.warn('[TFY] Could not determine current video category — sidebar filtering skipped');
     return;
@@ -258,7 +262,7 @@ chrome.runtime.onMessage.addListener((message) => {
     disconnectSidebarObserver();
     sessionCategoryCache.clear();
     currentCategoryId = null;
-    chrome.storage.local.remove('currentVideoCategory');
+    chrome.runtime.sendMessage({ type: 'CLEAR_VIDEO_CATEGORY' }).catch(() => {});
 
     // Initialize filtering for new video
     if (filteringEnabled) { injectTFYStyles(); initForVideo(message.videoId); }
