@@ -20,8 +20,8 @@ Bug-fix release. No new user-facing features. Fixes two runtime correctness fail
 
 ### SPA Navigation
 
-- [ ] **SPAV-01**: Filtering activates automatically when navigating from the YouTube homepage to a watch page (no page reload required)
-- [ ] **SPAV-02**: Filtering activates automatically on any in-app YouTube navigation to a watch page (e.g., clicking related videos, navigating back and forward)
+- [x] **SPAV-01**: Filtering activates automatically when navigating from the YouTube homepage to a watch page (no page reload required)
+- [x] **SPAV-02**: Filtering activates automatically on any in-app YouTube navigation to a watch page (e.g., clicking related videos, navigating back and forward)
 
 ### Tab State
 
@@ -59,8 +59,8 @@ Bug-fix release. No new user-facing features. Fixes two runtime correctness fail
 | DOC-04 | Phase 5 | Complete |
 | DOC-05 | Phase 5 | Complete |
 | DOC-06 | Phase 5 | Complete |
-| SPAV-01 | Phase 6 | Pending |
-| SPAV-02 | Phase 6 | Pending |
+| SPAV-01 | Phase 6 | Complete |
+| SPAV-02 | Phase 6 | Complete |
 | TABST-01 | Phase 7 | Pending |
 | TABST-02 | Phase 7 | Pending |
 | TABST-03 | Phase 7 | Pending |
