@@ -3,7 +3,7 @@
 ## Current Status
 
 **Active Phase:** Phase 7 — Tab Lifecycle Fix + Multi-Tab Storage Scoping
-**Current Plan:** Phase 6 complete — ready to plan Phase 7
+**Current Plan:** Not started
 **Progress:** [█████████░] 92%
 
 ## Project Reference
