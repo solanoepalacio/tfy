@@ -1,168 +1,189 @@
 # Project Research Summary
 
-**Project:** TFY2 — Topic Focused YouTube
-**Domain:** Chrome Extension (YouTube sidebar filter)
-**Researched:** 2026-02-20
+**Project:** TFY (Track For You) — Chrome Extension YouTube Sidebar Filter
+**Domain:** Chrome Manifest V3 Extension — v1.3 Bug Fixes
+**Researched:** 2026-02-26
 **Confidence:** HIGH
 
 ## Executive Summary
 
-TFY2 is a Chrome Manifest V3 extension that filters YouTube's sidebar suggestions by comparing each suggestion's category to the currently-playing video's category, collapsing off-topic items rather than removing them. This is a genuinely novel approach in a crowded space — existing extensions either nuke the entire sidebar (Unhook, DF Tube) or require manual category selection (YouTube Focus Mode). TFY2's "auto-infer from current video" mechanic is its core differentiator and the reason it needs only 4-7 files with zero npm dependencies. The recommended stack is pure Vanilla JS on Manifest V3, communicating with the YouTube Data API v3 via a service worker, with `chrome.storage` for persistence. No build step, no framework, no bundler.
+TFY is a personal-use Chrome MV3 extension that filters YouTube sidebar suggestions based on the currently playing video's category, auto-inferred via the YouTube Data API v3. The product is already built and functionally complete through v1.2. The v1.3 milestone is a focused bug-fix release targeting two runtime correctness failures: stale popup state after tab close, and broken filtering when users navigate to a watch page from the YouTube homepage via SPA navigation. Both bugs are well-understood, low-risk to fix, and require minimal code changes — no new files, no new dependencies, no build-step changes.
 
-The architecture follows a clean three-component model: a content script that observes YouTube's DOM and applies filtering, a service worker that proxies YouTube API calls and manages caching, and a popup for on/off toggling. The critical architectural patterns are MutationObserver-based sidebar observation (YouTube loads suggestions lazily), message-passing between content script and service worker (content scripts can't make cross-origin API calls), and stateless service worker design (MV3 terminates workers after 30s of inactivity). All patterns are well-documented in official Chrome extension docs.
+The recommended approach for v1.3 is to address the two bugs in dependency order. The SPA navigation fix (expand the content script match pattern from `youtube.com/watch*` to `youtube.com/*`) must come first because it ensures the content script is present in all YouTube tabs, which is a prerequisite for the popup-to-content-script messaging that correctly solves multi-tab state accuracy. The tab lifecycle fix (add `chrome.tabs.onRemoved` + per-tab storage keying routed through the service worker) follows. The popup is updated last to read per-tab storage keys using the active tab ID from `chrome.tabs.query`. All three fixes are modifications to existing files only.
 
-The two highest risks are **YouTube DOM fragility** (YouTube updates its frontend every 1-4 weeks with no stable API for extensions) and **API quota exhaustion** (10,000 units/day default, easily burned through without batching and caching). Both are fully mitigable: centralize DOM selectors for easy updates, and batch up to 50 video IDs per API call (1 quota unit) with aggressive caching since video categories never change. The third risk — YouTube SPA navigation silently breaking the content script — is the #1 cause of 1-star reviews across competitors and must be handled correctly from the first commit.
+The primary implementation risk is not feature complexity but MV3 service worker lifecycle correctness: all event listeners must be registered at the top level of `service-worker.js` (not inside async callbacks or conditional blocks), or they will be silently lost when Chrome terminates the idle worker. The existing codebase already demonstrates the correct top-level registration pattern for `onMessage` and `onHistoryStateUpdated`. The fix must follow the same pattern for `onRemoved`. A secondary risk is that per-tab storage cleanup must be gated on a tab registry (populated by the already-present `onHistoryStateUpdated` listener) — otherwise closing a non-YouTube tab (Gmail, Google Docs) silently wipes the popup's category display for a still-open YouTube tab.
+
+---
 
 ## Key Findings
 
 ### Recommended Stack
 
-Pure Vanilla JavaScript on Chrome Manifest V3 with zero runtime dependencies. The extension has ~7 files total — adding React, TypeScript, or a bundler would add build complexity for no benefit at this scope.
+No new frameworks, libraries, or build steps are required for v1.3. The fix draws on four Chrome APIs not currently registered in the extension:
 
-**Core technologies:**
-- **Chrome Manifest V3:** Required platform — MV2 is deprecated and actively being removed
-- **Vanilla JavaScript (ES2022+):** No framework needed for 4 JS files; Chrome's content script environment supports modern JS natively
-- **YouTube Data API v3:** `videos.list` (1 quota unit, batch up to 50 IDs) for category lookups; `videoCategories.list` (1 unit) for human-readable names; API key auth only — no OAuth needed
-- **Chrome Storage API:** `chrome.storage.local` for API key + toggle persistence; `chrome.storage.session` for ephemeral category cache
-- **Chrome Messaging API:** `chrome.runtime.sendMessage` for content script ↔ service worker communication (content scripts can't make cross-origin fetches)
+**Core technologies (new for v1.3):**
+- `chrome.tabs.onRemoved` — Detect tab close in service worker; fires with `(tabId, removeInfo)` for every tab closed in Chrome; no `"tabs"` permission required for the event itself; clean up per-tab storage entry on receipt
+- `chrome.tabs.onActivated` — Optional; detect active tab switch; `activeInfo.tabId` available immediately; tab URL requires `chrome.tabs.get(tabId)` and the `"tabs"` permission
+- `chrome.scripting.executeScript` — Programmatic content script injection fallback; used when `sendMessage` throws (content script absent in tab); requires `"scripting"` permission; treated as optional hardening, not the primary fix
+- Per-tab storage key scheme (`currentVideoCategory_${tabId}`) — Replaces global flat `currentVideoCategory` key; eliminates multi-tab race conditions; writer is the service worker (using `sender.tab.id` from `onMessage`), not the content script
 
-**What NOT to use:** React/Vue/Svelte (overkill), jQuery (dead weight), Webpack (unnecessary for 4 files), `gapi` client library (banned in MV3 — loads remote code), OAuth (not needed for public endpoints), `search.list` endpoint (100 units/call vs 1 unit for `videos.list`).
+**Critical storage shape change:** The flat `currentVideoCategory` string key in `chrome.storage.local` becomes `currentVideoCategory_${tabId}`. This is a breaking change to how the content script writes and the popup reads category state. The service worker acts as the sole writer because content scripts cannot reliably obtain their own `tabId` — `chrome.tabs.getCurrent()` is not available in content scripts; the reliable path is routing the write through `chrome.runtime.sendMessage` and using `sender.tab.id` in the service worker's `onMessage` handler.
+
+**No new manifest permissions are required** for the core fixes. `chrome.tabs.onRemoved` fires without `"tabs"`. The `webNavigation` permission (already declared) provides `details.tabId` and `details.url` for building the tab registry — no `"tabs"` permission needed for that path.
 
 ### Expected Features
 
-The competitive landscape has three tiers: nuclear section-hiders (Unhook: 1M users), content-level blockers (BlockTube: 100K users), and category-aware filters (YouTube Focus Mode: 1K users). TFY2 occupies the least crowded tier with a genuinely unique auto-inference mechanic.
+The core product is complete. v1.3 adds no new user-visible capabilities — it makes existing capabilities work correctly in flows that previously failed silently.
 
-**Must have (table stakes):**
-- Toggle on/off via popup — every competitor has this
-- Sidebar suggestion filtering by category — this IS the product
-- Current video category detection via YouTube API
-- YouTube SPA navigation handling — #1 cause of competitor 1-star reviews
-- Collapse (not remove) off-topic suggestions with "hidden: off-topic" label
-- Graceful API error handling — extension must never break YouTube
-- API key persistence in `chrome.storage.local`
-- Extension icon badge showing active/inactive state
+**Must have (table stakes — being fixed in v1.3):**
+- Popup reflects current reality — users trust the popup as a status indicator; showing stale data from a closed tab breaks that trust
+- Filtering activates from homepage navigation — navigating YouTube home then clicking a video is the primary user entry path; filtering must activate in this flow, not only on hard page loads to `/watch` URLs
+- Multi-tab popup accuracy — popup must show the active tab's category, not whichever tab last wrote to the global storage key
 
-**Should have (differentiators, post-v1 validation):**
-- Category label display in popup ("Current: Science & Technology")
-- Hidden/shown count ("Showing 4 of 12")
-- Batch API calls (up to 50 IDs per request) — critical for quota
-- Category cache in `chrome.storage.local` — video categories never change
+**Already shipped and working (do not break):**
+- Toggle on/off via popup — every competitor has this; TFY has it
+- Auto-infer category from current video — TFY's core differentiator; no competitor does this automatically; zero configuration per session
+- Collapse (not remove) off-topic suggestions with "Hidden: [category] · [title]" label — preserves user agency
+- SPA navigation within watch pages — handled via `webNavigation.onHistoryStateUpdated` relay + `yt-navigate-finish` DOM event fallback with `lastProcessedVideoId` deduplication guard
+- Shorts shelf suppression — simple CSS rule; no logic changes needed
 
 **Defer (v2+):**
-- Channel allowlist (always show subscribed channels)
-- Tag-based matching (if categories too coarse)
-- Related category grouping ("Science & Tech" ≈ "Education")
-- Homepage/Shorts/comments filtering — different products entirely
+- Persistent category cache across sessions — video categories never change; a `chrome.storage.local` video_id→category_id map would reduce API calls significantly across sessions
+- Related category grouping — Education + Science & Technology both qualify when watching a lecture; requires category relationship logic
+- Channel allowlist — always show specific channels regardless of category
+- Keyword/regex filtering — out of scope; contradicts TFY's zero-configuration value proposition
+
+**Anti-features (explicitly excluded):**
+- Manual category allowlist/blocklist UI — defeats the auto-infer differentiator; makes TFY a YouTube Focus Mode clone
+- Homepage feed filtering — no "current video" to match against on the homepage; different product
+- Tab-scoped storage key scheme as top-level design (use service-worker-mediated writes instead) — direct tab ID storage from content scripts is unreliable
+- Polling for active tab state — fights Chrome's event model; use `chrome.tabs.onActivated` events instead
 
 ### Architecture Approach
 
-Three-component architecture with `chrome.storage` as the shared state bus. The content script handles all DOM interaction (video ID extraction, sidebar observation via MutationObserver, collapse/expand UI). The service worker handles all YouTube API communication (receives batched video IDs, checks cache, calls API, returns category map). The popup reads/writes toggle state to `chrome.storage.local`, which the content script reacts to via `chrome.storage.onChanged`. No direct popup↔content script communication needed.
+TFY follows the canonical Chrome MV3 three-component architecture: content script for DOM interaction, service worker as a stateless API gateway, and `chrome.storage.local` as the shared state bus. The v1.3 changes reinforce this separation: content scripts route category storage writes through the service worker (which has `sender.tab.id`), rather than writing to storage directly. This eliminates the multi-tab race condition at its root.
 
-**Major components:**
-1. **Content Script** (`content.js` + `content.css`) — DOM observation, video ID extraction, sidebar filtering, collapse UI
-2. **Service Worker** (`background.js`) — YouTube API gateway, category caching, message handling; must be stateless (no global variables)
-3. **Popup** (`popup.html/js/css`) — User toggle, API key input; communicates via `chrome.storage` only
-4. **chrome.storage** — Shared state: `.local` for persistent config (API key, toggle), `.session` for ephemeral cache (video→category map)
+**Major components and their v1.3 changes:**
+1. `manifest.json` — Declares permissions and content script rules; match pattern changes from `https://www.youtube.com/watch*` to `https://www.youtube.com/*`
+2. `content-script.js` — DOM interaction on all YouTube pages; replaces `chrome.storage.local.set({ currentVideoCategory })` with `chrome.runtime.sendMessage({ type: 'STORE_CURRENT_CATEGORY', categoryName })`; IIFE guard already exits gracefully on non-watch pages (no `?v` param)
+3. `service-worker.js` — Adds `chrome.tabs.onRemoved` at top level to clear per-tab storage; adds `STORE_CURRENT_CATEGORY` message handler using `sender.tab.id`; updates existing `onHistoryStateUpdated` handler to maintain a tab registry (`Set` of YouTube watch tab IDs)
+4. `popup.js` — Replaces global `currentVideoCategory` read with: query active tab (`chrome.tabs.query`), construct per-tab key, read `currentVideoCategory_${tabId}`
 
-**Key patterns:**
-- Message-passing bridge for cross-origin API calls
-- MutationObserver for lazy-loaded sidebar elements
-- `yt-navigate-finish` event for SPA navigation detection
-- `chrome.storage.onChanged` for cross-component reactivity (popup toggle → content script)
-- Stateless service worker (read state from storage on every message)
+**Key architectural patterns carried forward:**
+- All service worker event listeners registered at top level (not in async callbacks)
+- Service worker is stateless — all persistent state in `chrome.storage.local`; in-memory structures (tab registry `Set`) can be rebuilt from `webNavigation` events after service worker restart
+- Message-passing bridge: content script → service worker for all writes and API calls; service worker → content script for navigation relay and toggle
+- `sender.tab.id` in `onMessage` handler is the authoritative source of a content script's tab ID
 
 ### Critical Pitfalls
 
-1. **YouTube SPA navigation breaks content script** — YouTube uses `history.pushState`, not full page reloads. Content script initialization only runs once. Must listen for `yt-navigate-finish` events and re-run the entire filtering pipeline on each navigation. _Phase 1 — architectural foundation._
+1. **Registering `tabs.onRemoved` inside an async callback** — Chrome restores only top-level listeners after idle service worker termination; a listener inside `.then()` or an async IIFE is silently lost when the worker wakes. Register at module scope; async work goes inside the handler body. The existing `onMessage` and `onHistoryStateUpdated` registrations demonstrate the correct pattern.
 
-2. **Sidebar loads asynchronously and incrementally** — `querySelectorAll` at any single point misses future elements. Must use `MutationObserver` on the sidebar container with debounced processing. Handle both initial batch and scroll-triggered lazy loads. _Phase 1 — core observation mechanism._
+2. **Global `currentVideoCategory` storage key with multiple tabs** — Last-writer-wins is non-deterministic across tabs; popup shows the wrong tab's category. Fix: key by `tabId` (`currentVideoCategory_${tabId}`), written by the service worker using `sender.tab.id`.
 
-3. **MV3 service worker terminates and loses state** — All global variables vanish after 30s idle. Store everything in `chrome.storage` (`.local` for persistent, `.session` for cache). Design every message handler to read state from storage, not globals. _Phase 1 — architectural constraint._
+3. **`tabs.onRemoved` fires for every tab close in Chrome, not just YouTube tabs** — Closing a Gmail tab unconditionally clears YouTube state. Gate cleanup on a tab registry (`Set` of known YouTube watch tab IDs, populated by the already-present `onHistoryStateUpdated` listener).
 
-4. **API quota exhaustion from naive calling** — 20 sidebar suggestions × individual API calls = 20 units/page view. Batch up to 50 IDs in one call (1 unit). Cache aggressively — video categories never change. Without this, quota exhausts in a few hundred page views. _Phase 2 — must be built into API layer from the start._
+4. **`chrome.tabs.get(tabId)` called inside `tabs.onRemoved`** — The tab is already destroyed when the handler fires; `tabs.get` returns an error. Use the pre-built tab registry instead of looking up tab metadata at close time.
 
-5. **YouTube DOM selector fragility** — YouTube updates its frontend every 1-4 weeks. Custom element tag names (`ytd-compact-video-renderer`) are more stable than classes/IDs but have no stability guarantee. Centralize all selectors in one location. Design for graceful degradation (show unfiltered rather than crash). _Phase 1 — selector strategy must be centralized from day 1._
+5. **Orphaned `observeSidebar` retry timers from rapid navigation** — `observeSidebar` uses `setTimeout` retry when `#secondary` is not yet present; rapid navigation leaves pending timers that attach additional `MutationObserver` instances after teardown. Fix: store the timer reference and cancel it in `disconnectSidebarObserver`.
+
+---
 
 ## Implications for Roadmap
 
-Based on research, the extension has a clear dependency chain that dictates build order. The architecture research explicitly identifies 6 phases, which I've consolidated into 4 phases based on natural groupings and the dependency graph.
+The v1.3 changes have a clear dependency order confirmed by all four research files. Three phases are recommended.
 
-### Phase 1: Extension Scaffold + Core Infrastructure
-**Rationale:** Everything depends on the manifest, service worker lifecycle, and content script injection model. The three critical Phase 1 pitfalls (SPA navigation, lazy sidebar loading, service worker state loss) must be solved architecturally before any feature code.
-**Delivers:** Working extension skeleton that loads on YouTube, detects SPA navigations, observes sidebar DOM changes, and has a functioning content script ↔ service worker message bridge. No actual filtering yet — just the plumbing.
-**Addresses:** Manifest setup, SPA navigation detection, MutationObserver infrastructure, message-passing protocol, chrome.storage schema
-**Avoids:** Pitfalls 1 (SPA nav), 2 (lazy sidebar), 3 (service worker state), 5 (selector fragility), 6 (existing tabs), 7 (video ID extraction), 8 (observer scope)
+### Phase 1: SPA Navigation Fix
+**Rationale:** The manifest match pattern expansion from `watch*` to `/*` is a prerequisite for the popup accuracy fix. Once the content script is present in all YouTube tabs (including those starting on the homepage), the popup can reliably send a message to the content script (or read the per-tab storage key that the service worker wrote). This is also the lowest-risk change — a single manifest line — and is independently verifiable before touching the storage architecture. The SPA fix also requires verifying that `disconnectSidebarObserver` correctly cancels the retry timer (Pitfall 9) and is called at the top of `initForVideo` to prevent double observer attachment (Pitfall 6).
+**Delivers:** Filtering activates when users navigate from the YouTube homepage to a watch page. Both the `yt-navigate-finish` fallback and the `YT_NAVIGATION` service worker relay work correctly in the homepage-first navigation path.
+**Addresses:** Bug 2 (SPA navigation from non-watch pages); table-stakes feature "filtering activates from homepage navigation"
+**Avoids:** Pitfall 6 (duplicate `initForVideo` on dual SPA signals), Pitfall 7 (`yt-navigate-finish` fires on non-watch pages — existing `?v` guard is load-bearing), Pitfall 9 (orphaned `observeSidebar` retry timers)
+**Files changed:** `manifest.json` (one line), `content-script.js` (verify IIFE guard; add timer cancel to `disconnectSidebarObserver`; add `disconnectSidebarObserver` call at top of `initForVideo`)
 
-### Phase 2: YouTube API Integration + Category Detection
-**Rationale:** With the scaffold proven, wire up the actual YouTube Data API calls. This is where the core value proposition comes alive — detecting the current video's category and looking up sidebar suggestion categories. Batching and caching must be built in from the start (not retrofitted).
-**Delivers:** Service worker that accepts video IDs, calls YouTube API with batching (up to 50 IDs), caches results in `chrome.storage.session`, and returns a category map. Content script sends extracted video IDs and receives category data.
-**Addresses:** Current video category detection, sidebar video category lookup, API key storage, batch API calls, category caching
-**Avoids:** Pitfalls 4 (quota exhaustion), 9 (message race conditions), 10 (API key exposure), 11 (forgetting current video lookup)
+### Phase 2: Tab Lifecycle Fix + Multi-Tab Storage Scoping
+**Rationale:** These two changes must be implemented together. Adding `onRemoved` to clear `currentVideoCategory` (the old global key) while the popup reads a per-tab key creates a new mismatch. The write path (content script sends `STORE_CURRENT_CATEGORY`, service worker keys by `sender.tab.id`) and the cleanup path (`onRemoved` removes per-tab key, gated on tab registry) must land as a unit. The tab registry is built by augmenting the already-present `onHistoryStateUpdated` handler — do not add a second listener for the same event.
+**Delivers:** Popup shows neutral state when no YouTube watch tab is active. Popup shows the correct tab's category when multiple YouTube tabs are open. Closing one YouTube tab does not clear another tab's category display. Closing a non-YouTube tab has no effect on popup state.
+**Addresses:** Bug 1 (stale popup state after tab close); multi-tab accuracy (popup reflects active tab)
+**Avoids:** Pitfall 1 (`onRemoved` in async context), Pitfall 2 (global storage key), Pitfall 3 (unconditional cleanup for all tab closes), Pitfall 4 (avoid `"tabs"` permission by using `webNavigation` for tab registry), Pitfall 5 (popup reads storage once — per-tab key at open time is the fix)
+**Files changed:** `service-worker.js` (add `onRemoved` listener at top level; add `STORE_CURRENT_CATEGORY` handler; update `onHistoryStateUpdated` to populate tab registry), `content-script.js` (replace direct `chrome.storage.local.set` with `sendMessage({ type: 'STORE_CURRENT_CATEGORY' })`), `popup.js` (read `currentVideoCategory_${tab.id}` using active tab from `chrome.tabs.query`)
 
-### Phase 3: Sidebar Filtering + Collapse UI
-**Rationale:** With category data flowing, implement the actual filtering logic and visual treatment. This is the user-visible feature — comparing categories and collapsing off-topic items. Depends entirely on Phases 1-2 being solid.
-**Delivers:** Off-topic sidebar suggestions are collapsed with "hidden: off-topic" labels. Click-to-expand handlers. CSS styling for collapsed state. Visual feedback that filtering is active.
-**Addresses:** Category comparison logic, DOM manipulation (collapse/expand), "hidden: off-topic" labels, content.css styling, icon badge for active state
-**Avoids:** UX pitfalls (FOUC, aggressive hiding, no visual feedback)
-
-### Phase 4: Popup + Polish
-**Rationale:** The popup is relatively independent — it only reads/writes `chrome.storage`. Build it last so the core filtering experience is proven before investing in UI chrome. This phase also handles edge cases and quality-of-life improvements.
-**Delivers:** Popup with on/off toggle + API key input. Toggle immediately enables/disables filtering. Error state display. Category label and hidden count (post-v1 enhancements).
-**Addresses:** Toggle on/off, API key entry UI, error state handling, graceful degradation, persist settings across sessions
-**Avoids:** None critical — this is the lowest-risk phase
+### Phase 3: Cleanup + Hardening
+**Rationale:** Low-risk housekeeping that improves long-session correctness and maintainability. Can be deferred if scope needs to tighten but adds meaningful robustness with minimal risk.
+**Delivers:** Removal of dead `fetchAndLogCategory` function (Pitfall 10). Optional: `chrome.storage.session` mirror for the in-memory tab registry to survive service worker restarts (Pitfall 8). Optional: `chrome.runtime.onStartup` sweep to remove orphaned per-tab keys from previous browser sessions.
+**Addresses:** Pitfall 8 (in-memory tab registry lost on service worker restart causes stale storage), Pitfall 10 (dead `fetchAndLogCategory` code with no callers)
+**Files changed:** `content-script.js` (remove `fetchAndLogCategory`); `service-worker.js` (add session storage mirror for tab registry; add startup cleanup sweep)
 
 ### Phase Ordering Rationale
 
-- **Scaffold → API → Filtering → UI** follows the dependency chain: you can't filter without category data, you can't get category data without the API bridge, you can't build the API bridge without the message-passing infrastructure
-- Phase 1 addresses **7 of 11 identified pitfalls** — it's the highest-risk phase and must be thorough
-- The popup (Phase 4) has zero dependencies on the content script or service worker beyond `chrome.storage` — it could technically be built in parallel with Phases 2-3, but it's lowest priority since the developer can toggle via DevTools during development
-- API integration (Phase 2) is isolated before filtering (Phase 3) so the API layer can be tested independently via DevTools console before wiring it into DOM manipulation
+- Phase 1 before Phase 2 because the manifest match expansion ensures the content script is present in tabs that originate from the YouTube homepage, which is the precondition for the popup accurately querying content script state. Without Phase 1, the popup messaging pattern still fails on homepage-first tabs.
+- Phase 2 atomically bundles tab-close cleanup and per-tab storage keying because they share the same storage key schema. Implementing either in isolation introduces a new bug (clearing the wrong key, or reading a key that was never written with the new scheme).
+- Phase 3 is hardening — the two primary bugs are resolved by Phases 1 and 2. Phase 3 prevents edge-case regression over long sessions (service worker restarts, stale key accumulation) and removes dead code before it can be accidentally wired up.
 
 ### Research Flags
 
-**Phases likely needing deeper research during planning:**
-- **Phase 1 (Scaffold):** YouTube DOM structure exploration needed. The exact selectors for `ytd-compact-video-renderer`, sidebar container, and video ID extraction require hands-on DevTools inspection of the live YouTube page. Community knowledge suggests `.data` property on Polymer elements, but this needs verification. _Confidence: MEDIUM on YouTube DOM specifics._
-- **Phase 3 (Filtering UI):** CSS collapse strategy needs testing. The exact CSS approach (`visibility:hidden` + `height:0` vs `display:none` vs wrapper element) affects both performance and YouTube's own scripts. Need to verify YouTube doesn't error when expected elements are visually hidden.
+All phases have well-documented patterns. No phases require `/gsd:research-phase` during planning.
 
-**Phases with standard patterns (skip deep research):**
-- **Phase 2 (API Integration):** YouTube Data API v3 is extremely well-documented. Endpoint shapes, quota costs, batching behavior, and field filtering are all verified from official docs. _Confidence: HIGH._
-- **Phase 4 (Popup):** Standard Chrome extension popup pattern. Toggle + storage is the most documented pattern in Chrome extension development. _Confidence: HIGH._
+**Phases with standard patterns (skip research-phase):**
+- **Phase 1 (SPA Nav Fix):** Single manifest line + code verification. Chrome's content script injection model is definitively documented. The IIFE guard behavior on non-watch pages is confirmed by direct code inspection.
+- **Phase 2 (Tab Lifecycle Fix):** All APIs are official Chrome APIs with clear signatures and permission requirements. The `sender.tab.id` pattern for obtaining tab ID in a content script context is documented in Chrome messaging docs. The tab registry pattern using `webNavigation` to avoid `"tabs"` permission is confirmed in official docs.
+- **Phase 3 (Cleanup):** Housekeeping only. No new API surface. `chrome.storage.session` behavior is documented.
+
+**One verification item to address during Phase 1 execution (not a research gap):** The exact timing window between dual SPA navigation signals (`YT_NAVIGATION` relay vs `yt-navigate-finish` DOM event) during rapid re-navigation has not been empirically measured. The fix (call `disconnectSidebarObserver` at the top of `initForVideo`) is correct by construction, but verify with a rapid three-video navigation test that exactly one `[TFY]` category log line appears per navigation.
+
+---
 
 ## Confidence Assessment
 
 | Area | Confidence | Notes |
 |------|------------|-------|
-| Stack | HIGH | All technologies verified against official Chrome & YouTube API docs (2025-2026 updates). Zero ambiguity on MV3, storage APIs, messaging patterns. |
-| Features | HIGH | Analyzed 10+ competing extensions with user counts and ratings. Competitive gap analysis based on actual Chrome Web Store listings. TFY2's auto-infer differentiator confirmed as novel. |
-| Architecture | HIGH | All patterns sourced from official Chrome extension documentation. Message-passing, service worker lifecycle, content script injection — all well-documented with code examples. |
-| Pitfalls | HIGH (Chrome/API), MEDIUM (YouTube DOM) | Chrome extension pitfalls are well-documented. YouTube DOM specifics (element names, `.data` properties, custom events) are community-observed patterns with no official stability guarantee. |
+| Stack | HIGH | All new APIs sourced from official Chrome for Developers docs; no undocumented behavior in the fix paths; version minimums well below current Chrome stable |
+| Features | HIGH | Bug fix scope verified against actual extension source code; competitive landscape research from v1.0–v1.2 confirmed TFY's differentiator remains novel; v1.3 bug behaviors confirmed by direct code path analysis |
+| Architecture | HIGH | All patterns from official Chrome MV3 docs; `sender.tab.id`, top-level listener registration, `chrome.storage.session` vs `local` — all definitively documented; existing codebase validates patterns work in practice |
+| Pitfalls | HIGH (critical), MEDIUM (moderate) | Critical pitfalls (Pitfalls 1–7) verified against official docs and direct source analysis; moderate pitfalls (Pitfall 8 service worker restart, Pitfall 9 timer accumulation) based on code analysis and known MV3 lifecycle behavior |
 
-**Overall confidence:** HIGH — The extension platform (Chrome MV3) and API (YouTube Data v3) are both mature, well-documented technologies. The main uncertainty is YouTube's DOM structure, which is inherently unstable and requires ongoing maintenance.
+**Overall confidence:** HIGH
 
 ### Gaps to Address
 
-- **YouTube sidebar DOM structure:** Exact selectors and video ID extraction strategy need hands-on verification via DevTools. The `.data` property pattern on `ytd-compact-video-renderer` is community knowledge, not officially documented. _Resolve during Phase 1 implementation with live DOM inspection._
-- **YouTube category granularity:** YouTube has ~32 video categories. It's unknown whether category-level matching will be precise enough for a good UX (e.g., "Entertainment" is very broad). _Resolve during Phase 3 testing. If too coarse, the "related category grouping" v2 feature becomes more urgent._
-- **`yt-navigate-finish` event reliability:** This custom event is not officially documented by YouTube. It's been stable for years in the extension community but could be removed. _Implement with MutationObserver URL-polling fallback from day 1._
-- **Flash of unfiltered content (FOUC):** Users may briefly see unfiltered sidebar before API response arrives. The CSS-first approach (hide-then-reveal) needs testing to ensure it doesn't cause perceived jank. _Resolve during Phase 3 with CSS injection via manifest._
+- **FEATURES.md vs ARCHITECTURE.md approach discrepancy for popup category query:** FEATURES.md (§ Bug 1 Expected Behavior: Multi-Tab) recommends querying the content script directly via `GET_CURRENT_CATEGORY` message as the multi-tab fix. ARCHITECTURE.md and STACK.md both implement per-tab storage keying via the service worker as the primary approach. The storage keying approach is more robust (works even while the content script is initializing or if it has not yet received a video), and all code examples in the research files use storage keying. Treat the message-based query as a supplementary option, not the primary implementation. Resolve in Phase 2 by following the storage keying approach.
+
+- **In-memory tab registry behavior after service worker restart:** The `Set` of YouTube watch tab IDs is in-memory and resets when Chrome terminates the idle service worker. After restart, `onHistoryStateUpdated` will re-populate the registry as tabs navigate, but a tab close event that fires immediately after a service worker wake (before any navigation event re-populates the registry) will be missed. Impact is low — a stale storage key accumulates (a few bytes) but does not cause functional breakage since the popup reads an active-tab-scoped key at open time. Address in Phase 3 with `chrome.storage.session` mirror.
+
+- **`yt-navigate-finish` event stability:** Not officially documented by YouTube. Confirmed stable by multiple independent extension developers and community sources, but could be removed in a future YouTube frontend update. The extension already has `webNavigation.onHistoryStateUpdated` as the primary SPA detection mechanism. The `yt-navigate-finish` listener is belt-and-suspenders. No action needed for v1.3 beyond preserving the existing fallback.
+
+---
 
 ## Sources
 
 ### Primary (HIGH confidence)
-- Chrome Extension MV3 docs — migration, service workers, content scripts, messaging, storage (developer.chrome.com, updated 2025-12)
-- YouTube Data API v3 — videos.list, videoCategories.list, quota costs, batching (developers.google.com, updated 2026-02-12)
-- MDN MutationObserver — API reference and usage patterns (developer.mozilla.org)
-- Chrome Web Store listings — Unhook (1M users), BlockTube (100K), DF Tube (100K), RYS (20K), YouTube Blocker (10K), YouTube Focus Mode (1K), Study Mode YouTube (1K)
-- npm registry — chrome-types package v0.1.416 (verified 2026-02-20)
+- [chrome.tabs API](https://developer.chrome.com/docs/extensions/reference/api/tabs) — `onRemoved`, `onActivated`, `query`, `get` signatures; permission requirements for `url` access vs event-only access
+- [chrome.scripting API](https://developer.chrome.com/docs/extensions/reference/api/scripting) — `executeScript` signature; `"scripting"` permission requirement
+- [Chrome Extension Service Worker Lifecycle](https://developer.chrome.com/docs/extensions/develop/concepts/service-workers/lifecycle) — top-level listener registration requirement; 30-second idle termination; event-driven wake behavior
+- [Chrome Extension Message Passing](https://developer.chrome.com/docs/extensions/develop/concepts/messaging) — `sender.tab.id` availability in `onMessage` handler; `return true` for async `sendResponse`
+- [chrome.storage API](https://developer.chrome.com/docs/extensions/reference/api/storage) — `local` vs `session` semantics; no transaction support (concurrent writes are non-deterministic)
+- [chrome.webNavigation API](https://developer.chrome.com/docs/extensions/reference/api/webNavigation) — `onHistoryStateUpdated` for SPA pushState detection; `details.tabId` and `details.url` available without `"tabs"` permission
+- [Manifest — content scripts](https://developer.chrome.com/docs/extensions/reference/manifest/content-scripts) — static injection only fires on document creation (hard page load); SPA navigation does not re-inject
+- [chrome.tabs permission requirements](https://developer.chrome.com/docs/extensions/develop/concepts/declare-permissions) — `"tabs"` required only to read `url`, `pendingUrl`, `title`, `favIconUrl` from Tab objects
+- Direct source code analysis: `service-worker.js`, `content-script.js`, `popup.js`, `manifest.json` in this repo (HIGH — ground truth)
 
 ### Secondary (MEDIUM confidence)
-- YouTube custom element tag names (`ytd-compact-video-renderer`, `ytd-watch-next-secondary-results-renderer`) — community-inspected, stable in practice, no official guarantee
-- YouTube SPA navigation events (`yt-navigate-finish`) — widely used in extension community, not officially documented
-- YouTube Polymer element `.data` property — community knowledge for extracting video metadata from custom elements
+- [tabs.onRemoved — MDN](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/tabs/onRemoved) — `removeInfo` shape: `{ windowId: number, isWindowClosing: boolean }`; tab URL not available in callback
+- [WXT content scripts guide](https://wxt.dev/guide/essentials/content-scripts.html) — content script match pattern limitation for SPA sites
+- [Chrome Extensions SPA support (Medium)](https://medium.com/@softvar/making-chrome-extension-smart-by-supporting-spa-websites-1f76593637e8) — SPA injection patterns
+- [MV3 service worker listener loss (Chromium groups)](https://groups.google.com/a/chromium.org/g/chromium-extensions/c/05BZLHHxMmc) — community-confirmed async listener registration failures; aligns with official lifecycle docs
+- [chrome.storage concurrent write race conditions (Chromium groups)](https://groups.google.com/a/chromium.org/g/chromium-extensions/c/y5hxPcavRfU) — community-documented; corroborates no-transaction official docs
+- [Content script not reinjected on SPA navigation (Chromium groups)](https://groups.google.com/a/chromium.org/g/chromium-extensions/c/32lLHYjQUQQ) — confirmed behavior; content scripts only inject on document creation
 
-### Tertiary (LOW confidence)
-- YouTube DOM update frequency ("every 1-4 weeks") — anecdotal from extension developer forums; actual frequency varies
+### Tertiary (MEDIUM confidence — undocumented YouTube internals)
+- [yt-navigate-finish event confirmation (GitHub)](https://github.com/Zren/ResizeYoutubePlayerToWindowSize/issues/72) — `yt-navigate-finish` and `yt-page-data-updated` event names confirmed by multiple extension developers; not officially documented by YouTube; stable in practice for years
+
+### Competitor analysis (HIGH confidence for market positioning)
+- Unhook (1M users, 4.9 stars) — nuclear sidebar removal; different value proposition from TFY
+- DF Tube (100K users, last updated 2019) — same nuclear approach; stale
+- YouTube Focus Mode (1K users, 3.8 stars) — manual category selection; TFY's auto-infer is the differentiator
+- YouTube Blocker (10K users, 4.5 stars) — hardcoded education categories; TFY's dynamic matching is the differentiator
+- BlockTube (100K users, 3.9 stars) — keyword/channel blocking; different approach; no category awareness
 
 ---
-*Research completed: 2026-02-20*
+*Research completed: 2026-02-26*
 *Ready for roadmap: yes*

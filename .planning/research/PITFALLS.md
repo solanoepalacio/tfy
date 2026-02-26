@@ -1,263 +1,364 @@
 # Pitfalls Research
 
-**Domain:** Chrome Extension (YouTube DOM manipulation + YouTube Data API v3)
-**Researched:** 2026-02-20
-**Confidence:** HIGH (sourced from Chrome official docs, YouTube API docs, MDN, and verified domain-specific patterns)
+**Domain:** Chrome Extension — Tab State Management + YouTube SPA Navigation (v1.3 Bug Fixes)
+**Researched:** 2026-02-26
+**Confidence:** HIGH (sourced from Chrome official docs, verified against actual extension source code, community-confirmed patterns)
 
 ---
 
 ## Critical Pitfalls
 
-These cause fundamental breakage — the extension appears broken to the user.
+These cause fundamental breakage — the bugs being fixed in v1.3 either reappear or new bugs are introduced.
 
 ---
 
-### Pitfall 1: YouTube SPA Navigation Destroys Your Content Script State
+### Pitfall 1: Registering tabs.onRemoved Inside an Async Function or Callback
 
 **What goes wrong:**
-YouTube is a Single Page Application (SPA). When the user clicks a video link in the sidebar, YouTube does NOT perform a full page reload. It uses `history.pushState()` / `popstate` to swap content in-place. The URL changes from `/watch?v=abc` to `/watch?v=xyz`, but your content script's `document_idle` injection only fires on the *initial* full page load. After the first SPA navigation, your content script never re-runs. The sidebar fills with unfiltered suggestions and your extension appears dead.
+The `tabs.onRemoved` listener is placed inside an async IIFE, a `Promise.then()`, or any other async context — not at the top level of `service-worker.js`. Chrome restores only top-level listeners when it restarts an idle service worker. A listener registered inside an async callback is registered after the first event loop tick, meaning it is never registered when the service worker wakes from termination. The tab close event fires, the service worker wakes, but the listener isn't there to receive it. The storage entry `currentVideoCategory` is never cleared.
 
 **Why it happens:**
-Chrome's content script injection (both static `"content_scripts"` in manifest and `document_idle`/`document_end` triggers) only fires on actual navigation events — full HTTP navigations that create a new document. YouTube's client-side routing does not create a new document; it reuses the existing one. The content script stays loaded in memory, but any initialization logic (finding the sidebar, reading the current video ID) ran only once for the first video.
+Developers who want to read from storage before registering the listener write code like:
+
+```javascript
+// WRONG — listener registered after async gap
+chrome.storage.local.get('someKey').then(({ someKey }) => {
+  chrome.tabs.onRemoved.addListener((tabId) => { /* ... */ });
+});
+```
+
+This is the most common MV3 listener registration mistake. The service worker lifecycle docs explicitly state: all event listeners must be registered synchronously in the first turn of the event loop (top-level), or they will be missed when the service worker is restarted by an event.
 
 **How to avoid:**
-1. **Detect URL changes** — Listen for `yt-navigate-finish` custom events that YouTube fires after SPA navigation. This is the YouTube-specific signal. As a fallback, use a `MutationObserver` on `<title>` or poll `location.href`.
-2. **Architecture: Separate initialization from detection** — Structure the content script so that the "find sidebar, read video ID, start filtering" logic is a callable function, not top-level imperative code. Call it on initial load AND on every SPA navigation.
-3. **Extract video ID from URL on every navigation** — Parse `window.location.search` for the `v` parameter on each navigation event, not just once.
+Register `chrome.tabs.onRemoved.addListener(...)` at the top level of `service-worker.js`, with no surrounding async context. If you need storage data inside the handler, call `chrome.storage.local.get` inside the callback body, not outside:
+
+```javascript
+// CORRECT — top-level registration
+chrome.tabs.onRemoved.addListener(async (tabId, removeInfo) => {
+  // Async work goes INSIDE the handler, not wrapping the addListener call
+  const data = await chrome.storage.local.get('trackedTabs');
+  // ...
+});
+```
 
 **Warning signs:**
-- Extension works on first page load but stops working when clicking any video link.
-- Extension works after a hard refresh (Ctrl+R) but not during normal browsing.
-- `console.log` in content script shows it only runs once per session.
+- `chrome.tabs.onRemoved` never fires when tested after Chrome has been idle for 60+ seconds.
+- Works in DevTools (service worker inspector keeps worker alive) but fails in normal use.
+- Adding `console.log` directly inside the listener never prints after a service worker restart.
 
-**Phase to address:** Phase 1 (Scaffold) — This is the #1 architectural decision. If you get this wrong, everything built on top fails.
+**Phase to address:** Phase 1 (Tab Lifecycle Fix) — The listener registration pattern must be set correctly from the start. It cannot be patched after the fact without restructuring.
 
-**Confidence:** HIGH — Verified via Chrome docs on content script injection timing (only fires on document creation, not pushState).
+**Confidence:** HIGH — Directly stated in Chrome's official service worker events documentation. Verified against the existing `service-worker.js` which already demonstrates this pattern correctly for `onMessage` and `onHistoryStateUpdated`.
 
 ---
 
-### Pitfall 2: Sidebar Content Loads Asynchronously and Incrementally
+### Pitfall 2: Storing currentVideoCategory as a Global Key Instead of Per-Tab
 
 **What goes wrong:**
-You query the DOM for sidebar suggestion elements immediately after detecting a navigation, but the sidebar is empty or only partially loaded. YouTube lazily renders sidebar suggestions — they load in batches as the user scrolls, and the initial batch isn't present in the DOM when the page first "finishes" navigating. Your `querySelectorAll` finds 0 or only 2-3 elements, misses the other 15+, and the user sees unfiltered suggestions that loaded after your script ran.
+`currentVideoCategory` is stored in `chrome.storage.local` as a single flat key. With one YouTube tab open this works. With two YouTube tabs open, each content script instance writes to the same key, and whichever tab performed a navigation most recently "wins." The popup reads a category belonging to a different tab than the one the user is looking at. When the user switches tabs, the popup shows the wrong video's category. When the user closes the tab that "won" last, the key is cleared even though the other tab is still watching a video.
 
 **Why it happens:**
-YouTube's sidebar renderer (`ytd-watch-next-secondary-results-renderer`) uses a lazy/virtual rendering strategy. Elements are added to the DOM progressively:
-- Some arrive shortly after the main video player loads (maybe 200-500ms after navigation).
-- More arrive as YouTube's recommendation engine responds.
-- Even more arrive on scroll (infinite scroll / lazy loading).
-
-A one-shot `querySelectorAll` at any single point in time will miss future elements.
+The straightforward approach of `chrome.storage.local.set({ currentVideoCategory: name })` stores only one value with no tab identity. When two content script instances (in two different tabs) both call this, there is no coordination — last-writer-wins, which is non-deterministic.
 
 **How to avoid:**
-1. **Use `MutationObserver` on the sidebar container** — Observe `childList` mutations on the sidebar container element. Process each new batch of `<ytd-compact-video-renderer>` elements as they appear.
-2. **Configure observer correctly** — Use `{ childList: true, subtree: true }` since YouTube's DOM is deeply nested and suggestion elements may be inserted at varying depths.
-3. **Debounce processing** — YouTube may add elements one-by-one rapidly. Batch your processing with a short debounce (50-100ms) to avoid running your filter logic 20 times for 20 individual element insertions.
-4. **Handle the container not existing yet** — The sidebar container itself may not exist when your script first runs after SPA navigation. You may need to observe a higher-level ancestor first, then switch to observing the sidebar container once it appears.
+Key the stored state by tab ID:
+
+```javascript
+// In content-script.js — tag category with this tab's ID
+const tabId = /* obtained from service worker or chrome.tabs.getCurrent() */;
+chrome.storage.local.set({ [`tab_${tabId}_category`]: categoryName });
+
+// In popup.js — read based on the active tab's ID
+const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+const key = `tab_${activeTab.id}_category`;
+const result = await chrome.storage.local.get(key);
+```
+
+Alternative (simpler): have the service worker maintain a `tabCategories: { [tabId]: categoryName }` object, updated via message from content script, and cleaned up in `tabs.onRemoved`.
 
 **Warning signs:**
-- Some sidebar items are filtered but others are not.
-- Filtering works inconsistently — sometimes 3 items are filtered, sometimes 15.
-- Scrolling down reveals unfiltered items.
+- Opening two YouTube tabs with different videos shows the second tab's category in the popup when viewing the first.
+- Closing one YouTube tab makes the popup show "No category" even though another YouTube tab is still open.
+- Race logs show two rapid `chrome.storage.local.set` calls to the same key from different tabs.
 
-**Phase to address:** Phase 1 (Scaffold) — Core to the filtering mechanism. MutationObserver is the foundational pattern for this extension.
+**Phase to address:** Phase 1 (Tab Lifecycle Fix) — Must be addressed when adding `tabs.onRemoved`. If you clear `currentVideoCategory` on tab close without per-tab keying, you can accidentally clear the category for a tab that is still open.
 
-**Confidence:** HIGH — MutationObserver is the canonical approach per MDN and Chrome docs. YouTube's lazy rendering behavior is well-documented in the extension development community.
+**Confidence:** HIGH — Verified by reading `popup.js` and `content-script.js`. Both use the unkeyed `currentVideoCategory` key. `chrome.storage` has no transactions (confirmed by Chrome docs), so concurrent writes from two content script contexts produce non-deterministic state.
 
 ---
 
-### Pitfall 3: MV3 Service Worker Terminates and Loses In-Memory State
+### Pitfall 3: Clearing Storage in tabs.onRemoved Without Verifying the Tab Was a YouTube Watch Tab
 
 **What goes wrong:**
-You store the current video's category, the API response cache, or the enabled/disabled toggle in a JavaScript variable in the service worker. After 30 seconds of inactivity (no messages, no API calls), Chrome terminates the service worker. When the content script sends a message, the service worker wakes up — but all in-memory variables are `undefined`. The extension throws errors or returns wrong data.
+`tabs.onRemoved` fires for every tab closed in Chrome — YouTube tabs, Gmail tabs, settings tabs, everything. If the handler unconditionally removes `currentVideoCategory` (or related state) on any tab close, closing an unrelated tab (a Google search, an email) silently wipes the popup's category display for the currently active YouTube tab.
 
 **Why it happens:**
-Per Chrome's official documentation: "Chrome terminates a service worker when one of the following conditions is met: After 30 seconds of inactivity." Global variables are lost on termination. This is a fundamental MV3 architectural constraint — there is no persistent background page anymore.
+The `tabs.onRemoved` callback only provides `tabId` and `removeInfo: { windowId, isWindowClosing }`. It does NOT provide the URL of the closed tab. Without storing a mapping of `tabId → "was a YouTube watch tab"` somewhere accessible to the service worker, you cannot know which tab was closed.
+
+The `tabs.onRemoved` handler has no direct access to the closed tab's URL — the tab is already gone by the time the callback fires.
 
 **How to avoid:**
-1. **Use `chrome.storage.session` for ephemeral state** — API response caches, current video category, toggle state. `session` storage persists across service worker restarts but clears when the browser closes. It does NOT count against quota for the `local` storage area.
-2. **Use `chrome.storage.local` for persistent config** — API key, user preferences that should survive browser restarts.
-3. **Never use global `let`/`const`/`var` in service worker for state** — Only use them for constants (like API endpoints) or event handler registrations.
-4. **Design service worker to be stateless** — Each message handler should read needed state from storage, process, and respond. Don't assume any prior state exists.
+Maintain a tab registry in the service worker (or in `chrome.storage.session`). Track which tab IDs belong to YouTube watch pages. Populate it in `chrome.webNavigation.onHistoryStateUpdated` (already present in the service worker) or in `chrome.tabs.onUpdated`. Only clean up state in `tabs.onRemoved` when the closed `tabId` is in this registry:
+
+```javascript
+// Strategy 1: in-memory Map (fast, but lost on service worker restart)
+const ytTabIds = new Set();
+
+chrome.webNavigation.onHistoryStateUpdated.addListener((details) => {
+  const url = new URL(details.url);
+  if (url.pathname === '/watch' && url.searchParams.get('v')) {
+    ytTabIds.add(details.tabId);
+  }
+}, { url: [{ hostEquals: 'www.youtube.com' }] });
+
+chrome.tabs.onRemoved.addListener((tabId) => {
+  if (ytTabIds.has(tabId)) {
+    ytTabIds.delete(tabId);
+    // Safe to clean up per-tab category state now
+    chrome.storage.local.remove(`tab_${tabId}_category`);
+  }
+});
+```
+
+An in-memory `Set` is acceptable here because the service worker only needs to track tabs that are currently open — if the service worker restarts, `chrome.webNavigation.onHistoryStateUpdated` will re-populate the set as tabs continue navigating.
 
 **Warning signs:**
-- Extension works for the first few minutes, then starts returning null/undefined values.
-- Works perfectly while DevTools (for the service worker) is open (because DevTools keeps the service worker alive), but breaks when DevTools is closed.
-- Intermittent "cannot read property of undefined" errors in service worker logs.
+- Closing a Gmail tab causes the popup to stop showing the YouTube video's category.
+- `tabs.onRemoved` logic fires and removes state more often than expected.
+- Popup shows "No category" after tab activity unrelated to YouTube.
 
-**Phase to address:** Phase 1 (Scaffold) — Must be designed from the start. Retrofitting stateless service worker architecture is painful.
+**Phase to address:** Phase 1 (Tab Lifecycle Fix) — Must be built into the `tabs.onRemoved` implementation from the start.
 
-**Confidence:** HIGH — Directly from Chrome's official service worker lifecycle documentation.
+**Confidence:** HIGH — Verified by reading `chrome.tabs.onRemoved` API docs (MDN, Chrome). The callback only receives `tabId` and `removeInfo`; the URL is not available. The tab is already removed before the callback fires.
 
 ---
 
-### Pitfall 4: YouTube Data API Quota Exhaustion from Naive API Calling
+### Pitfall 4: tabs Permission Not Declared When tabs.onRemoved Handler Needs Tab URL Data
 
 **What goes wrong:**
-The sidebar has ~20 video suggestions. For each video, you call `videos.list` to get its category. That's 20 API calls per page view. The user watches 10 videos in a session: 200 API calls. Over a day of research browsing (50 videos): 1,000 calls. Each `videos.list` costs 1 quota unit — so that's 1,000/10,000 daily quota. Sounds manageable, but:
-- If you accidentally call on SPA navigation AND the initial mutation AND each batch of new sidebar items, you might triple-count.
-- If you call `videos.list` individually (1 video ID per request) instead of batching (up to 50 IDs per request), you use 20x more requests than necessary.
-- If you DON'T cache results, the same video appearing in sidebars across multiple pages causes redundant calls.
+The developer adds `tabs.onRemoved`, tries to look up the closed tab's URL before the handler fires (e.g., using `chrome.tabs.get(tabId)` hoping the tab still exists), or tries to use `tabs.query` in a way that requires the `"tabs"` permission. Without `"tabs"` in `manifest.json`, these calls silently return undefined or stripped tab objects with no URL.
 
-At worst case without batching/caching: 50 videos/day * 20 sidebar items * 1 call each = 1,000 units/day. With accidental re-triggering, easily 3,000-5,000 units/day. You have 10,000 total.
+Separately: if the developer tries to add `chrome.tabs.onUpdated` to build the tab registry (to know which tabs are YouTube watch pages), they may not realize `tabs.onUpdated` fires even without `"tabs"` permission but the `tab.url` property in the callback is undefined unless `"tabs"` is declared.
 
 **Why it happens:**
-The YouTube Data API v3 has a default quota of 10,000 units/day. `videos.list` costs 1 unit per call. But it accepts up to 50 comma-separated video IDs in a single call — still 1 unit. Most developers don't realize they can batch.
+The manifest currently declares `"activeTab"` but not `"tabs"`. `activeTab` only grants temporary, gesture-triggered access to the currently active tab — it does NOT grant persistent access to all tabs. `tabs.onRemoved` itself does not require the `"tabs"` permission to receive the event, but accessing `tab.url` or `tab.pendingUrl` in any tabs API callback does require it.
+
+The solution is simple: to track YouTube tab URLs persistently (for the tab registry), add `"tabs"` to the manifest permissions. Alternatively, use `webNavigation` events (already present and already requiring `"webNavigation"` permission) to build the registry without needing `"tabs"` — since `webNavigation` event details always include the URL.
 
 **How to avoid:**
-1. **Batch video IDs** — `videos.list` accepts `id=VIDEO_ID_1,VIDEO_ID_2,...,VIDEO_ID_50` — one call, one quota unit, up to 50 results. Collect all sidebar video IDs first, then make ONE batched API call.
-2. **Cache aggressively** — A video's category NEVER changes. Cache `videoId -> categoryId` in `chrome.storage.local`. Before any API call, filter out video IDs you've already cached. Over time, your cache will cover most popular videos.
-3. **Use `fields` parameter** — Request only needed fields: `fields=items(id,snippet/categoryId)`. This reduces response size (bandwidth) though it doesn't reduce quota cost.
-4. **Use the `part` parameter minimally** — `part=snippet` is sufficient for categoryId. Don't request `contentDetails`, `statistics`, etc.
-5. **Deduplicate before calling** — The same video ID can appear in sidebar across navigations. Before batching, check your cache.
+Use the already-present `chrome.webNavigation.onHistoryStateUpdated` (which provides `details.url` and `details.tabId` without needing `"tabs"` permission) to build the tab registry. This avoids the permission escalation and is already in the service worker:
+
+```javascript
+// Already present — add tabId tracking here
+chrome.webNavigation.onHistoryStateUpdated.addListener(
+  (details) => {
+    const url = new URL(details.url);
+    const videoId = url.searchParams.get('v');
+    if (url.pathname === '/watch' && videoId) {
+      ytTabIds.add(details.tabId); // Track the tab
+      // ... existing YT_NAVIGATION relay logic ...
+    }
+  },
+  { url: [{ hostEquals: 'www.youtube.com' }] }
+);
+```
+
+If you do need `"tabs"` permission for other reasons, add it to manifest. But prefer avoiding it by leveraging `webNavigation` which is already declared.
 
 **Warning signs:**
-- API returns HTTP 403 with reason `quotaExceeded` partway through the day.
-- Network tab shows dozens of individual `videos.list` calls with single IDs.
-- Extension works in the morning but stops working by afternoon.
+- `tab.url` is undefined in `tabs.onUpdated` callback even though the tab is clearly on YouTube.
+- `chrome.tabs.get(tabId)` returns a tab object but its `url` property is missing.
+- Manifest lint tools warn about missing `"tabs"` permission.
 
-**Phase to address:** Phase 2 (API Integration) — When API calls are first implemented, batching and caching must be built in from the start.
+**Phase to address:** Phase 1 (Tab Lifecycle Fix) — Manifest permissions must be verified before the tab lifecycle code is written.
 
-**Confidence:** HIGH — Quota costs directly verified from Google's official quota calculator page: `videos.list` = 1 unit, `videoCategories.list` = 1 unit, default = 10,000/day.
+**Confidence:** HIGH — Directly from Chrome docs: `"tabs"` permission is required to read `url`, `pendingUrl`, `title`, or `favIconUrl` from `tabs.Tab` objects. `chrome.tabs.onRemoved` fires without `"tabs"` permission.
 
 ---
 
-### Pitfall 5: Targeting Wrong DOM Selectors That Break on YouTube Updates
+### Pitfall 5: Popup Reads Storage Once on DOMContentLoaded — Never Responds to Tab Changes
 
 **What goes wrong:**
-You target YouTube sidebar elements with CSS selectors like `#secondary .ytd-compact-video-renderer` or `ytd-watch-next-secondary-results-renderer`. YouTube updates their frontend code every 1-4 weeks. Tag names, class names, IDs, and DOM structure all change without notice. Your extension suddenly stops finding any sidebar elements and silently does nothing.
+The popup reads `currentVideoCategory` from storage exactly once: on `DOMContentLoaded`. If the user opens the popup while on Tab A (Science & Technology), then switches to Tab B (Music) without closing the popup, the popup still shows "Science & Technology." The popup is not stale because storage was never updated — it's stale because the popup never re-read storage or responded to the user switching tabs.
+
+This is separate from the tab-close bug but compounds it. Even after fixing tab-close cleanup, the popup can show outdated information if the user navigates between YouTube tabs while the popup is open.
 
 **Why it happens:**
-YouTube is a Google Polymer/Lit web components application. Element names like `ytd-compact-video-renderer` are custom elements. While YouTube's top-level custom element names have been relatively stable (they're part of the web components API), internal class names, `id` attributes, and nesting depth change frequently. YouTube does NOT provide a stable DOM API for extensions.
+Popup lifetime: the popup is destroyed and recreated each time the user opens it. On a given open, it reads storage once. There is no mechanism to react to storage changes or tab activation changes during the popup's lifetime unless explicitly coded.
 
 **How to avoid:**
-1. **Prefer custom element tag names over classes/IDs** — `ytd-compact-video-renderer` is a custom element tag and tends to be more stable than class names or IDs. Use `document.querySelectorAll('ytd-compact-video-renderer')` rather than `.style-scope.ytd-watch-next-secondary-results-renderer .video-item`.
-2. **Use semantic structure, not positional selectors** — Avoid `:nth-child`, complex descendant chains, or layout-dependent selectors.
-3. **Build resilient selectors with fallbacks** — Try primary selector first; if it returns 0 results, try fallback selectors. Log warnings when falling back so you notice breakage early.
-4. **Isolate selector definitions** — Put all DOM selectors in a single constants file. When YouTube changes, you update one file, not scattered hardcoded strings.
-5. **Accept this is inherently fragile** — You're building on an unstable surface. Design for graceful degradation: if selectors fail, the extension does nothing (shows unfiltered sidebar) rather than crashing or corrupting the page.
+Two complementary approaches:
+
+1. **Listen for storage changes** — `chrome.storage.onChanged.addListener` lets the popup reactively update when the service worker writes new category state for the active tab.
+
+2. **Read storage scoped to the active tab** — On `DOMContentLoaded`, determine which tab is active (`chrome.tabs.query`), and read the per-tab key (`tab_${tabId}_category`) rather than a global key. This ensures that each popup open reflects the correct tab even without reactive updates.
+
+For a simple fix: approach 2 alone is sufficient since the popup is destroyed and recreated on each open, and `chrome.tabs.query({ active: true, currentWindow: true })` gives the current tab at open time.
 
 **Warning signs:**
-- Extension stops working after a browser restart (YouTube updated in the background).
-- `querySelectorAll` returns empty NodeLists in console testing.
-- CSS rules no longer match any elements.
+- Popup shows category from a closed or background tab.
+- Switching YouTube tabs and re-opening the popup shows the same (wrong) category.
+- Category does not clear after the YouTube tab is closed, even after the storage fix is applied.
 
-**Phase to address:** Phase 1 (Scaffold) — Selector strategy should be centralized from day 1. Accept and plan for this fragility.
+**Phase to address:** Phase 2 (Popup State Fix) — This is the popup-side of the fix. Must be addressed in tandem with the storage cleanup in Phase 1.
 
-**Confidence:** MEDIUM — YouTube's custom element tag names have been stable for years, but this cannot be guaranteed. No official stability commitment exists.
+**Confidence:** HIGH — Verified by reading `popup.js`. The popup reads from the global `currentVideoCategory` key once, with no per-tab scoping and no reactive update mechanism.
 
 ---
 
-### Pitfall 6: Content Script Doesn't Run on Already-Open YouTube Tabs
+### Pitfall 6: Duplicate Initialization When Both SPA Navigation Signals Fire for the Same Navigation
 
 **What goes wrong:**
-You install/reload the extension in developer mode. YouTube is already open in a tab. You navigate to a video — the extension does nothing. You open a NEW tab with YouTube — it works. The existing tab never got the content script injected because static content script injection only occurs when a page is loaded AFTER the extension is installed.
+For a single YouTube SPA navigation, both the service worker relay (`YT_NAVIGATION` message) and the `yt-navigate-finish` DOM event fire. The `lastProcessedVideoId` guard in `content-script.js` deduplicates them — but only if they both arrive with the same `videoId`. A race condition exists: if `yt-navigate-finish` fires and calls `initForVideo` before the service worker message arrives, `lastProcessedVideoId` is set to the new video ID. When the service worker message then arrives with the same ID, the guard catches it and skips it correctly.
+
+However: if the message arrives first and `initForVideo` starts running asynchronously (it calls `chrome.runtime.sendMessage` which is async), `lastProcessedVideoId` is set but `currentCategoryId` is still null. If `yt-navigate-finish` fires during this window, the guard catches it and does NOT call `initForVideo` again — correct. But if `yt-navigate-finish` fires with the same video ID after `initForVideo` has already set `currentCategoryId`, the sidebar observer gets attached twice (the first call from the service worker message did not disconnect before the second came in).
+
+The specific risk: calling `observeSidebar(filterSidebar)` twice on the same `#secondary` container creates two `MutationObserver` instances watching the same container. Both fire on every sidebar mutation, calling `filterSidebar` twice for every new sidebar item.
 
 **Why it happens:**
-Static content scripts (`"content_scripts"` in manifest.json) are injected into pages that match the URL pattern when those pages are loaded. If the page was loaded BEFORE the extension was installed (or reloaded during development), the content script is not retroactively injected.
+The deduplication guard (`if (message.videoId === lastProcessedVideoId) return`) is set at the START of each handler. But `initForVideo` is async and sets `currentCategoryId` later. If both signals arrive before the async operation completes, the second signal is blocked by the guard (correct). If they arrive far enough apart that the first one finishes, the guard works. The edge case is re-navigation: user clicks video A, then immediately clicks video B before A's `initForVideo` resolves. The teardown logic for video A may not have run, and if `observeSidebar` was called for A, it's still running when B starts.
 
 **How to avoid:**
-1. **During development, just reload the YouTube tab after reloading the extension.** Accept this as a dev workflow limitation.
-2. **Optionally: programmatic injection on install** — In the service worker's `chrome.runtime.onInstalled` listener, use `chrome.tabs.query` to find existing YouTube tabs and `chrome.scripting.executeScript` to inject into them. This is nice-to-have, not critical for personal-use.
+Ensure `disconnectSidebarObserver()` is always called before any `observeSidebar()` call. The current code does this in the `YT_NAVIGATION` and `yt-navigate-finish` handlers (teardown block), but verify it also happens inside `initForVideo` itself before calling `observeSidebar`:
+
+```javascript
+async function initForVideo(videoId) {
+  disconnectSidebarObserver(); // Guard against double-observer if called twice
+  // ... rest of initForVideo ...
+  observeSidebar(filterSidebar);
+}
+```
+
+This makes the function idempotent regarding observer attachment — calling it twice disconnects the first observer before attaching the second.
 
 **Warning signs:**
-- "My extension doesn't work!" but only on tabs that were open before the extension was loaded.
-- Works on some tabs but not others (the ones that were open during install).
+- `filterSidebar` calls logged twice per sidebar mutation.
+- `chrome.runtime.sendMessage` called twice for the same set of video IDs in rapid succession.
+- Console shows two "[TFY] Current video category" log lines for the same video.
 
-**Phase to address:** Phase 1 (Scaffold) — Awareness is enough. Programmatic injection on install can be a Phase 3 polish item.
+**Phase to address:** Phase 1 (SPA Navigation Fix) — Needs to be verified and hardened when the SPA navigation path is tested end-to-end.
 
-**Confidence:** HIGH — Directly from Chrome content scripts documentation: static scripts inject on page load, not retroactively.
+**Confidence:** MEDIUM — Based on code analysis of `content-script.js`. The `lastProcessedVideoId` guard handles most cases. The double-observer risk exists in rapid re-navigation scenarios or if the timing between the two signals widens unexpectedly.
 
 ---
 
-### Pitfall 7: Extracting Video ID from Sidebar Items Is Harder Than Expected
+### Pitfall 7: yt-navigate-finish Fires on Non-Watch Page Navigations
 
 **What goes wrong:**
-You need the video ID of each sidebar suggestion to look up its category via the API. You assume you can just read the `href` attribute from an `<a>` tag inside each sidebar item. But YouTube's custom elements use complex shadow DOM structures, virtual DOM patterns, and the `href` may be on an ancestor element, not the individual item. Or the `href` is a relative URL. Or the video ID is embedded in a `data-*` attribute you didn't expect.
+The `yt-navigate-finish` event fires for ALL YouTube SPA navigations — not just video watch page navigations. Navigating from `/watch?v=abc` to the YouTube homepage `/`, to `/search?q=something`, to a YouTube channel page, to a playlist — all fire `yt-navigate-finish`. The current content script guard `if (!videoId || videoId === lastProcessedVideoId) return` handles the case where the new URL has no `v` parameter (i.e., non-watch pages), but the handler still runs, accesses `window.location.href`, and calls `chrome.storage.local.remove('currentVideoCategory')` even when navigating to a page that has no video context.
+
+The more significant issue: the content script is only injected on `youtube.com/watch*` pages. If the user navigates away from a watch page (watch → homepage), the content script STAYS alive in its tab (SPA — no new document). The existing `yt-navigate-finish` listener will fire for the non-watch navigation, run the teardown (reset, disconnect, remove storage) — which is actually correct behavior. But if the user then navigates back to a watch page (homepage → watch), `yt-navigate-finish` fires again, `videoId` is now present, and `initForVideo` runs. This is the intended behavior.
+
+The risk area: `chrome.storage.local.remove('currentVideoCategory')` in the `yt-navigate-finish` handler also fires when navigating between non-watch pages (homepage → search). At that point there is no `currentVideoCategory` to remove, so it is a no-op and harmless. But with per-tab keying (fix for Pitfall 2), the remove call must use the correct per-tab key — not a global one. Ensure the remove call uses `tab_${tabId}_category`.
 
 **Why it happens:**
-YouTube's sidebar items (`ytd-compact-video-renderer`) contain nested custom elements. The clickable link element and the video data are organized in ways that don't follow simple HTML patterns. The video ID might be:
-- In the `href` of an `<a>` tag (e.g., `/watch?v=VIDEO_ID`)
-- In a `data` property on the custom element (accessible via JS properties, not attributes)
-- In the element's internal `data` object (only accessible by reading the element's Polymer/Lit properties)
+`yt-navigate-finish` is an undocumented YouTube-internal DOM event that fires for every client-side navigation in the SPA, regardless of destination URL. The event provides no navigation destination info itself — you have to read `window.location.href` after it fires to determine where you are.
 
 **How to avoid:**
-1. **Inspect the actual DOM first** — Before writing extraction code, manually inspect YouTube's sidebar in DevTools. Look at the actual structure of `ytd-compact-video-renderer` elements.
-2. **Try reading the element's `.data` property** — YouTube's Polymer elements often expose a `.data` JS property containing the video's metadata (including videoId). This is more reliable than parsing `href` attributes.
-3. **Parse the `href` as a fallback** — Look for `<a>` tags with `href` containing `/watch?v=`. Use `URL` or `URLSearchParams` to reliably extract the `v` parameter. Don't regex the href.
-4. **Use `URLSearchParams`** — `new URL(anchorElement.href).searchParams.get('v')` is reliable and handles edge cases (extra params, fragments).
+Keep the existing URL check (`const videoId = new URL(window.location.href).searchParams.get('v'); if (!videoId ...) return;`). This is already correct. Add a note that this guard is load-bearing — do not remove it when refactoring.
+
+When implementing per-tab storage (Pitfall 2 fix), ensure teardown calls use the tab-scoped key, not the global key.
 
 **Warning signs:**
-- Video IDs are `null` or `undefined` when passed to the API.
-- API returns no results for the IDs you extracted.
-- Some sidebar items return valid IDs but others don't.
+- Console shows `[TFY]` teardown logs when navigating to YouTube homepage.
+- Storage operations (set/remove) happen for non-watch navigations.
+- If the `?v` check is accidentally removed, `initForVideo` is called with `undefined` as the videoId.
 
-**Phase to address:** Phase 1 (Scaffold) — Video ID extraction is the core input to the entire filtering pipeline.
+**Phase to address:** Phase 1 (SPA Navigation Fix) — The guard is already in place; this is a verification concern and a heads-up for refactoring.
 
-**Confidence:** MEDIUM — YouTube's Polymer element structure is not officially documented. The `.data` property pattern is based on community knowledge.
+**Confidence:** HIGH — Verified by reading content-script.js. The `yt-navigate-finish` event behavior on non-watch pages is confirmed by community documentation (yt-navigate-finish fires for all SPA navigations).
 
 ---
 
 ## Moderate Pitfalls
 
-These cause delays, confusion, or technical debt but won't necessarily break the extension completely.
+These cause subtle bugs or maintenance problems but don't immediately break core functionality.
 
 ---
 
-### Pitfall 8: MutationObserver Runs Too Broadly and Tanks Performance
+### Pitfall 8: Service Worker In-Memory Tab Registry Lost on Restart Creates Missed Cleanup
 
 **What goes wrong:**
-You set up a `MutationObserver` with `{ childList: true, subtree: true }` on `document.body` instead of on the specific sidebar container. YouTube's DOM is enormous and mutates constantly (video player updates, comments loading, ad injections, animations). Your observer callback fires hundreds of times per second, your filter logic runs on every mutation, and the page becomes sluggish.
+The tab registry (the `Set` of YouTube watch tab IDs) is stored in a JavaScript variable in the service worker. The service worker terminates after 30 seconds of inactivity. When a tab is closed after the service worker has been idle (and thus terminated), the service worker wakes on `tabs.onRemoved`, but its in-memory registry is empty. The handler sees an empty registry, cannot match the `tabId`, and skips the storage cleanup. Stale `tab_${tabId}_category` entries accumulate in `chrome.storage.local`.
 
 **Prevention:**
-- **Observe the narrowest possible container** — Find the sidebar's parent element and observe only that subtree. Not `document.body`.
-- **Early-return in callback** — Check if added nodes are actually `ytd-compact-video-renderer` before doing any processing. Skip all other mutations.
-- **Debounce expensive operations** — Batch mutations and process them in a `requestAnimationFrame` or `setTimeout(..., 50)` debounce.
-- **Disconnect when not on a watch page** — If the user navigates away from `/watch`, disconnect the observer.
+Two-layer defense:
 
-**Phase to address:** Phase 1 — Observer scope must be correct from the start.
+1. **Mirror the registry in `chrome.storage.session`** — `storage.session` persists through service worker restarts but clears when the browser closes (matching tab lifecycle expectations). Write to session storage whenever the in-memory registry changes. On service worker startup, read from session storage to rebuild the registry.
+
+2. **Use a cleanup sweep** — On `chrome.runtime.onStartup` or periodically (e.g., via `chrome.alarms`), query all open tabs and remove storage keys for tab IDs that no longer exist.
+
+For this specific extension's complexity level, option 2 (periodic cleanup) is simpler than option 1. Stale entries have low impact (they waste a few bytes of storage), so a cleanup on service worker startup via `chrome.runtime.onInstalled` or `onStartup` is sufficient.
+
+**Warning signs:**
+- `chrome.storage.local` accumulates `tab_*_category` keys over time that correspond to long-closed tabs.
+- Popup shows stale category for a tab that was closed hours ago (service worker restarted between close and popup open).
+
+**Phase to address:** Phase 2 (Hardening) — The basic fix can land without this; this is a robustness improvement.
+
+**Confidence:** MEDIUM — Based on known MV3 service worker termination behavior. The impact for this extension is low (stale storage bytes, not functional breakage), but the pattern is worth knowing.
 
 ---
 
-### Pitfall 9: Message Passing Race Conditions Between Content Script and Service Worker
+### Pitfall 9: observeSidebar Retry Loop Accumulates Timers on Rapid Navigation
 
 **What goes wrong:**
-Content script detects SPA navigation, extracts video IDs, sends them to the service worker for API lookup. But the service worker was terminated (idle timeout) and hasn't fully restarted by the time the message arrives. Or the content script sends two rapid messages (for two quick navigations) and the responses arrive out of order. The content script applies stale category data from the previous video's sidebar.
+`observeSidebar` in `content-script.js` uses a polling retry when `#secondary` is not yet present: `setTimeout(() => observeSidebar(callback), 300)`. If the user navigates rapidly (video A → video B → video C before the 300ms fires), multiple pending `setTimeout` calls from different navigation attempts are outstanding. When they eventually fire, each one finds `#secondary` (from the current, most recent navigation) and attaches an additional observer, defeating `disconnectSidebarObserver()`.
 
 **Prevention:**
-- **Use `chrome.runtime.sendMessage` which auto-wakes the service worker** — Don't use `postMessage` / service worker messaging. Chrome extension messaging wakes the service worker automatically.
-- **Include the video ID (or a request ID) in both request and response** — When the response arrives, verify it's for the *current* video, not a previous one. Discard stale responses.
-- **Set a "current video" guard** — Before applying filter results, check that the current page's video ID still matches what was requested. If the user navigated away during the API call, discard.
+Store the retry timer reference and cancel it in the teardown:
 
-**Phase to address:** Phase 2 (API Integration) — Becomes relevant when async API calls are introduced.
+```javascript
+let sidebarObserverRetryTimer = null;
+
+function observeSidebar(callback) {
+  const container = document.querySelector('#secondary');
+  if (!container) {
+    sidebarObserverRetryTimer = setTimeout(() => observeSidebar(callback), 300);
+    return;
+  }
+  // ...attach observer...
+}
+
+function disconnectSidebarObserver() {
+  if (sidebarObserverRetryTimer) {
+    clearTimeout(sidebarObserverRetryTimer);
+    sidebarObserverRetryTimer = null;
+  }
+  if (sidebarObserver) {
+    sidebarObserver.disconnect();
+    sidebarObserver = null;
+  }
+}
+```
+
+The current teardown sequence (`resetAllCollapsed(); disconnectSidebarObserver(); ...`) calls `disconnectSidebarObserver()` on navigation, but without cancelling the timer, the retry can fire after teardown on rapid navigation.
+
+**Warning signs:**
+- Multiple "[TFY] Current video category" console lines for the same video after rapid back-to-back navigation.
+- `filterSidebar` runs N times per mutation where N > 1, correlating with how quickly the user navigated.
+
+**Phase to address:** Phase 1 (SPA Navigation Fix) — Should be addressed when the SPA navigation path is tested with rapid navigation.
+
+**Confidence:** MEDIUM — Based on code analysis of `observeSidebar`. This is a real edge case for fast users or automated testing.
 
 ---
 
-### Pitfall 10: API Key Exposed in Network Requests Visible to Page JavaScript
+### Pitfall 10: fetchAndLogCategory Is a Dead Code Path That Makes the Same API Call as initForVideo
 
 **What goes wrong:**
-If the content script makes API calls directly (via `fetch` to `googleapis.com`), the API key is in the URL or headers, visible in the page's DevTools Network tab, and potentially accessible to YouTube's page-level JavaScript. For a personal-use extension this is low risk, but it's still sloppy.
+`content-script.js` has `fetchAndLogCategory` (lines 215-241) which logs the current video category to the console. It is called nowhere in the current code — `initForVideo` handles the category fetch and logging. If `fetchAndLogCategory` were accidentally called alongside `initForVideo`, it would double the API requests for the current video's category lookup.
 
 **Prevention:**
-- **Make API calls from the service worker, not the content script** — Content script sends video IDs to service worker via messaging. Service worker makes the fetch to YouTube API. API key lives only in the service worker context.
-- **Store the API key in `chrome.storage.local`** — The service worker reads it from storage when needed. Never hardcode the API key in the content script.
-- **Add `host_permissions` for the API domain** — In `manifest.json`, add `"https://www.googleapis.com/*"` to host_permissions so the service worker can make cross-origin fetches.
+Remove `fetchAndLogCategory` as dead code before the v1.3 changes land, or convert it into a debug utility with a clear flag. This prevents it from being accidentally wired up by future changes.
 
-**Phase to address:** Phase 2 (API Integration) — Architectural decision when API calls are first implemented.
+**Warning signs:**
+- API quota counter increments twice per navigation instead of once.
+- Two simultaneous `GET_VIDEO_CATEGORY` messages in service worker logs for the same video on the same navigation.
 
----
+**Phase to address:** Phase 1 (Cleanup) — Minor, but prevents future confusion.
 
-### Pitfall 11: Not Handling the "Current Video" Category Lookup
-
-**What goes wrong:**
-You need the category of the currently-playing video to compare against sidebar suggestions. But you only look up sidebar video categories, forgetting that you also need to fetch the current video's category. Or you extract the current video ID from the URL but make a separate API call for it instead of batching it with sidebar IDs.
-
-**Prevention:**
-- **Fetch current video's category as the FIRST step** — Before processing sidebar items, get the current video's category.
-- **Cache it** — The current video's category won't change during the session. Cache it in `chrome.storage.session` keyed by video ID.
-- **Batch with sidebar lookups** — Include the current video ID in the same `videos.list` batch call as sidebar IDs to save quota.
-
-**Phase to address:** Phase 2 (API Integration) — Must be in the API flow from the start.
+**Confidence:** HIGH — Verified by reading content-script.js. `fetchAndLogCategory` has no callers. `initForVideo` performs the same lookup with additional logic on top.
 
 ---
 
@@ -265,12 +366,11 @@ You need the category of the currently-playing video to compare against sidebar 
 
 | Shortcut | Immediate Benefit | Long-term Cost | When Acceptable |
 |----------|-------------------|----------------|-----------------|
-| Hardcoded CSS selectors scattered across files | Fast to write | One YouTube update breaks everything; have to hunt through all files | Never — centralize selectors from day 1 |
-| Storing API key as a string constant in source code | Works immediately | Key committed to git; visible in source | Acceptable for POC since personal-use and private repo; move to `chrome.storage.local` for durability |
-| Individual API calls per video ID | Simpler logic | 20x quota usage per page load | Never — batching is trivial to implement with `videos.list` |
-| `setInterval` polling for URL changes instead of event-based detection | "Works" for SPA navigation | Constant CPU usage; delayed detection (depends on interval); inelegant | Only as a fallback if `yt-navigate-finish` event proves unreliable |
-| Observing `document.body` instead of sidebar container | "Works" everywhere | Performance degradation; observer fires for every DOM change on the page | Only temporarily while bootstrapping, before sidebar container is identified |
-| No API response caching | Simpler code; always fresh data | Quota exhaustion; slower filtering; unnecessary network requests | Never — a video's category is immutable; caching has zero downsides |
+| Global `currentVideoCategory` storage key | Simple to write and read | Multi-tab race conditions; popup shows wrong tab's category | Never for multi-tab use — key by tabId |
+| Clearing all TFY state in tabs.onRemoved unconditionally | Simple cleanup logic | Clearing state for unrelated tabs (Gmail close clears YouTube state) | Never — always verify the closed tab was a tracked YouTube tab |
+| In-memory only tab registry (no session storage mirror) | No storage overhead | Service worker restart causes missed cleanup | Acceptable for MVP given low impact; address in hardening phase |
+| Ignoring `isWindowClosing` flag in tabs.onRemoved | Simpler handler | When browser window closes, onRemoved fires for every tab in the window simultaneously — if each handler writes to storage, you get N concurrent writes | Acceptable — the per-tab key cleanup is idempotent, concurrent removes for different keys cause no conflict |
+| Removing `fetchAndLogCategory` without a test pass | Cleaner codebase | If tests reference it, tests break | Acceptable immediately — it has no callers |
 
 ---
 
@@ -278,13 +378,11 @@ You need the category of the currently-playing video to compare against sidebar 
 
 | Integration | Common Mistake | Correct Approach |
 |-------------|----------------|------------------|
-| Content Script ↔ Service Worker messaging | Using `window.postMessage` (wrong API — that's for page ↔ content script communication) | Use `chrome.runtime.sendMessage` (content→SW) and `chrome.tabs.sendMessage` (SW→content) |
-| YouTube Data API v3 `videos.list` | Requesting `part=snippet,contentDetails,statistics` when you only need categoryId | `part=snippet` + `fields=items(id,snippet/categoryId)` — minimal data |
-| YouTube Data API v3 batch IDs | Passing IDs as separate API calls | Join up to 50 IDs as comma-separated string in `id` parameter: `id=ID1,ID2,ID3` |
-| `chrome.storage.local` in content scripts | Assuming content script's `localStorage` === extension's storage | Content script's Web Storage APIs access the HOST page's storage (YouTube's). Use `chrome.storage.local` for extension storage, which IS accessible from content scripts |
-| Manifest `host_permissions` | Forgetting to add API domain | Must include `"https://www.googleapis.com/*"` for service worker to fetch YouTube API |
-| Manifest `permissions` | Requesting too many permissions | Minimum needed: `"storage"`, `"activeTab"` or host_permissions for YouTube |
-| Content script `run_at` timing | Using `document_start` (DOM not ready) or `document_end` (may miss some elements) | `document_idle` (default) is correct — DOM is ready, but remember YouTube SPA navigation means you need MutationObserver regardless |
+| `tabs.onRemoved` → storage cleanup | Using `chrome.storage.local.remove('currentVideoCategory')` with global key | Use per-tab key `tab_${tabId}_category`; only remove when tabId is in the tab registry |
+| `tabs.onRemoved` callback | Calling `chrome.tabs.get(tabId)` inside the handler to get the URL | Tab is already removed; `tabs.get` returns an error. Use the pre-built tab registry instead |
+| Service worker `webNavigation.onHistoryStateUpdated` → tab registry | Building the registry in a separate listener from the existing one | Modify the existing `onHistoryStateUpdated` listener to also update the registry — don't add a second listener for the same event |
+| Popup reading per-tab category | Querying `chrome.tabs.query({ active: true, currentWindow: true })` to get the current tab ID | This is correct — but ensure the query runs before reading storage, not in parallel with it |
+| Content script writing per-tab category | Content scripts don't have direct access to their own `tabId` | Use a message to the service worker to get the tab ID, or use `chrome.tabs.getCurrent()` (available in content scripts) — `chrome.tabs.getCurrent` works in content scripts and returns the tab the script is running in |
 
 ---
 
@@ -292,11 +390,9 @@ You need the category of the currently-playing video to compare against sidebar 
 
 | Trap | Symptoms | Prevention | When It Breaks |
 |------|----------|------------|----------------|
-| MutationObserver on `document.body` with `subtree: true` | Page lag, high CPU, janky scrolling | Observe only the sidebar container element | Always — YouTube's DOM mutates constantly (player, comments, ads) |
-| Synchronous DOM queries in MutationObserver callback | Each mutation triggers expensive `querySelectorAll` across entire document | Only process `mutation.addedNodes`, not the full DOM | With 10+ sidebar items loading in rapid succession |
-| No debounce on observer callback | Filter logic runs 20 times for 20 individual element insertions | Collect mutations, process in batched `requestAnimationFrame` or 50ms `setTimeout` | During initial sidebar population (many elements added rapidly) |
-| Re-fetching API data on every SPA navigation without checking cache | Unnecessary network requests; quota waste; slower UX | Check `chrome.storage.local` cache before any API call | After first few navigations when cache is warm |
-| Applying CSS `display:none` to sidebar items (DOM thrashing) | Layout reflow for each hidden element | Use CSS classes with `visibility: hidden` + `height: 0` + `overflow: hidden`, or better: wrap in a collapse container | When hiding 15+ items simultaneously |
+| `tabs.onRemoved` firing for every tab close in Chrome | High service worker wake frequency if user closes many tabs | The handler itself is fast (a registry check and a storage remove) — acceptable cost | Not a performance concern at any realistic tab count |
+| Per-tab storage keys accumulating in `chrome.storage.local` | Storage grows unboundedly over long browser sessions | Cleanup on `runtime.onStartup`; remove stale keys for tabs that no longer exist | After dozens of sessions; each entry is tiny but compounds over months |
+| `chrome.storage.local.get` inside `tabs.onRemoved` for every close event | Storage read on every tab close in Chrome | Cache the tab registry in memory; only read from storage if in-memory is empty | With many tabs open and rapid tab closing |
 
 ---
 
@@ -304,10 +400,8 @@ You need the category of the currently-playing video to compare against sidebar 
 
 | Mistake | Risk | Prevention |
 |---------|------|------------|
-| API key in content script source code | Key visible to YouTube's page-level JavaScript (isolated worlds protect JS variables, but network requests are visible) | Keep API key in service worker only; make API calls from service worker |
-| API key committed to git (public repo) | Key exposed to anyone who finds the repo | Add API key to `.gitignore`; store in `chrome.storage.local` loaded via options page, or use a config file excluded from git |
-| Not validating API response data before injecting into DOM | XSS risk if API response is corrupted or contains unexpected HTML | Parse JSON responses with `JSON.parse`; never use `innerHTML` with API data; use `textContent` for any displayed text |
-| `host_permissions` too broad | Unnecessary access to sites; if published, Chrome Web Store would reject | Scope to exactly `"*://*.youtube.com/*"` and `"https://www.googleapis.com/*"` |
+| Tab ID as storage key without validation | Attackers cannot forge tab IDs in extension context — not an external attack surface | Not a concern for a personal-use, developer-mode extension |
+| Storing category names (not IDs) in storage | Category names are display strings from YouTube API — no PII, no credentials | Acceptable; no security risk for this data |
 
 ---
 
@@ -315,24 +409,34 @@ You need the category of the currently-playing video to compare against sidebar 
 
 | Pitfall | User Impact | Better Approach |
 |---------|-------------|-----------------|
-| Removing sidebar items from DOM entirely (`element.remove()`) | YouTube's scripts may error when they can't find expected elements; user can't undo; page feels "broken" | Collapse with CSS (height: 0, overflow: hidden) + small clickable "hidden: off-topic" label |
-| No visual feedback while API call is in progress | User sees unfiltered sidebar for 1-3 seconds, then items suddenly collapse — jarring | Show a subtle "filtering..." indicator, or hide sidebar items by default and reveal them as they pass the filter |
-| Filtering on every navigation with no toggle | User can't see all suggestions even when they want to | Popup toggle (in scope); persist toggle state in `chrome.storage.local` |
-| Aggressive filtering that hides too much | Sidebar has 0-2 visible items; user thinks YouTube is broken | Show collapsed items with expand affordance; consider showing a count ("12 off-topic items hidden") |
-| Flash of unfiltered content (FOUC) | User briefly sees all suggestions before filtering kicks in | Apply a CSS rule immediately (via manifest CSS injection) that fades sidebar items until they're marked as "checked" |
+| Popup shows "Watching: Science & Technology" after the tab was closed | User confused — they think an old tab is still active | Clear the popup category display when no YouTube watch tabs are open |
+| Popup shows wrong tab's category when multiple YouTube tabs open | User focused on Tab A, popup shows Tab B's category | Scope popup display to the currently active tab's category |
+| After SPA navigation, popup still shows old video's category until popup is closed and reopened | Stale category lingers until popup refresh | On navigation, service worker updates per-tab storage; popup reads at open time from per-tab key |
 
 ---
 
 ## "Looks Done But Isn't" Checklist
 
-- [ ] **Works on SPA navigation, not just initial page load** — Click 3 video links in sequence; filtering must work on all 3 without manual refresh.
-- [ ] **Sidebar items added AFTER initial load are filtered** — Scroll down in the sidebar to trigger lazy loading; new items must be filtered too.
-- [ ] **Extension works after browser idle** — Leave Chrome idle for 5 minutes, then navigate YouTube. Service worker will have terminated; it must revive correctly.
-- [ ] **API quota is sustainable** — Check Google Cloud Console quota usage after a realistic 30-minute browsing session. Estimate daily usage.
-- [ ] **Toggle OFF actually stops filtering** — Toggling off in popup should immediately restore all collapsed sidebar items, not just stop filtering new ones.
-- [ ] **Cache is actually being used** — After visiting the same popular video in sidebar twice, confirm no duplicate API calls in Network tab.
-- [ ] **No errors in service worker console** — Open `chrome://extensions`, click "Service Worker" inspect link. No unhandled promise rejections or undefined variable errors.
-- [ ] **Extension survives extension reload during development** — After clicking "Reload" on `chrome://extensions`, the already-open YouTube tab needs the content script re-injected (manual refresh or programmatic injection).
+- [ ] **tabs.onRemoved fires correctly after idle** — Close Chrome DevTools for the service worker, wait 60 seconds, close the YouTube tab. Popup should show no category (not the stale one).
+- [ ] **Closing non-YouTube tab does not wipe category** — With YouTube tab showing "Science & Technology", close an unrelated Gmail tab. Popup must still show "Science & Technology".
+- [ ] **Multi-tab: popup shows active tab's category** — Open Tab A (Music video) and Tab B (Science video). Click on Tab B. Open popup — must show "Science & Technology", not "Music".
+- [ ] **Tab close with two YouTube tabs open** — With Tab A and Tab B both watching YouTube, close Tab B. Open popup with Tab A active — must show Tab A's category, not blank.
+- [ ] **tabs.onRemoved listener is registered at top level** — Verify in service-worker.js that `chrome.tabs.onRemoved.addListener(...)` is at module scope, not inside any function, callback, or async block.
+- [ ] **SPA navigation fires initForVideo only once per navigation** — Navigate to a new video; confirm console shows exactly one "[TFY] Current video category" log.
+- [ ] **Rapid navigation leaves exactly one MutationObserver active** — Navigate video A → B → C quickly; confirm only one observer fires per sidebar mutation.
+- [ ] **No dead `setTimeout` timers after navigation teardown** — Navigate while `#secondary` retry loop is pending; confirm only the new navigation's observer is eventually attached.
+
+---
+
+## Recovery Strategies
+
+| Pitfall | Recovery Cost | Recovery Steps |
+|---------|---------------|----------------|
+| Listener registered in async context (Pitfall 1) | LOW | Move `addListener` call to module top level; remove wrapping async code |
+| Global storage key instead of per-tab (Pitfall 2) | MEDIUM | Change content-script to use `tab_${tabId}_category`; update popup to query active tabId first; update service worker cleanup to use same key |
+| Unconditional tabs.onRemoved cleanup (Pitfall 3) | LOW | Add tab registry (Set); gate cleanup on registry membership |
+| Missing `"tabs"` permission (Pitfall 4) | LOW | Add `"tabs"` to manifest permissions array; or restructure to use webNavigation instead |
+| Double MutationObserver from rapid navigation (Pitfall 6/9) | LOW | Add `disconnectSidebarObserver()` at top of `initForVideo`; cancel retry timer in disconnect |
 
 ---
 
@@ -340,58 +444,32 @@ You need the category of the currently-playing video to compare against sidebar 
 
 | Pitfall | # | Prevention Phase | Verification |
 |---------|---|------------------|--------------|
-| YouTube SPA navigation breaks content script | 1 | Phase 1 (Scaffold) | Click 3 different videos; extension works on each |
-| Sidebar lazy/incremental loading | 2 | Phase 1 (Scaffold) | Scroll sidebar; new items are processed |
-| MV3 service worker state loss | 3 | Phase 1 (Scaffold) | Wait 5 min idle; service worker still responds to messages |
-| API quota exhaustion | 4 | Phase 2 (API Integration) | Monitor Google Cloud Console after 30-min session |
-| YouTube DOM selector fragility | 5 | Phase 1 (Scaffold) | All selectors in one constants file; fallback selector logic present |
-| Content script not injected on existing tabs | 6 | Phase 1 (dev awareness) | Document in dev workflow; optionally add programmatic injection later |
-| Video ID extraction from sidebar items | 7 | Phase 1 (Scaffold) | Log extracted video IDs; verify all are valid 11-char strings |
-| MutationObserver scope too broad | 8 | Phase 1 (Scaffold) | Profile CPU during browsing; observer only fires for sidebar changes |
-| Message passing race conditions | 9 | Phase 2 (API Integration) | Rapidly click 3 videos; no stale data applied |
-| API key exposure | 10 | Phase 2 (API Integration) | Verify no API key visible in content script context |
-| Forgetting current video category lookup | 11 | Phase 2 (API Integration) | Current video's category appears in logs/debug output |
-
----
-
-## YouTube-Specific DOM Knowledge
-
-These are not pitfalls per se, but critical domain knowledge needed to avoid the pitfalls above.
-
-**Key YouTube custom elements (as of early 2026):**
-| Element | What it is | Stability |
-|---------|------------|-----------|
-| `ytd-app` | Root application element | HIGH — unlikely to change |
-| `ytd-watch-flexy` | Watch page container | HIGH — has been stable for years |
-| `ytd-watch-next-secondary-results-renderer` | Sidebar suggestions container | MEDIUM — tag name stable, internal structure changes |
-| `ytd-compact-video-renderer` | Individual sidebar video suggestion | MEDIUM — the primary element to target for filtering |
-| `ytd-compact-radio-renderer` | Sidebar "Mix" playlist suggestion | MEDIUM — should also be processed/filtered |
-| `ytd-compact-playlist-renderer` | Sidebar playlist suggestion | MEDIUM — may want to filter or skip |
-
-**YouTube navigation events:**
-| Event | Where to listen | What it means |
-|-------|-----------------|---------------|
-| `yt-navigate-finish` | `document` | SPA navigation completed; new page is rendered |
-| `yt-navigate-start` | `document` | SPA navigation beginning; old page about to be replaced |
-| `yt-page-data-updated` | `document` | Page data (title, metadata) has been updated |
-
-**Confidence:** MEDIUM — These are community-observed patterns, not officially documented by YouTube. Tag names and event names may change without notice.
+| tabs.onRemoved listener in async context | 1 | Phase 1 (Tab Lifecycle) | Inspect source; wait 60s idle; close tab; confirm popup clears |
+| Global storage key, multi-tab collision | 2 | Phase 1 (Tab Lifecycle) | Open 2 YouTube tabs; popup shows active tab's category |
+| tabs.onRemoved fires for all tabs | 3 | Phase 1 (Tab Lifecycle) | Close non-YouTube tab; confirm YouTube popup unchanged |
+| Missing tabs permission for tab URL access | 4 | Phase 1 (Tab Lifecycle) | Manifest review; webNavigation used for tab registry |
+| Popup reads storage once, not reactive | 5 | Phase 2 (Popup Fix) | Switch YouTube tabs; reopen popup; verify correct category |
+| Duplicate initForVideo on dual signal | 6 | Phase 1 (SPA Nav Fix) | One initForVideo log per navigation in console |
+| yt-navigate-finish on non-watch pages | 7 | Phase 1 (SPA Nav Fix) | Navigate watch → home; teardown fires but no initForVideo call |
+| In-memory registry lost on SW restart | 8 | Phase 2 (Hardening) | Check storage for stale tab keys after long idle session |
+| Orphaned observeSidebar retry timers | 9 | Phase 1 (SPA Nav Fix) | Rapid 3-navigation test; one observer in memory afterward |
+| fetchAndLogCategory dead code | 10 | Phase 1 (Cleanup) | grep for fetchAndLogCategory callers; confirm zero |
 
 ---
 
 ## Sources
 
-- **Chrome Extension Service Worker Lifecycle:** https://developer.chrome.com/docs/extensions/develop/concepts/service-workers/lifecycle (HIGH confidence, official docs)
-- **Chrome Extension Content Scripts:** https://developer.chrome.com/docs/extensions/develop/concepts/content-scripts (HIGH confidence, official docs)
-- **Chrome Extension Message Passing:** https://developer.chrome.com/docs/extensions/develop/concepts/messaging (HIGH confidence, official docs)
-- **Chrome Extension Events in Service Workers:** https://developer.chrome.com/docs/extensions/develop/concepts/service-workers/events (HIGH confidence, official docs)
-- **Chrome Extension Storage and Cookies:** https://developer.chrome.com/docs/extensions/develop/concepts/storage-and-cookies (HIGH confidence, official docs)
-- **YouTube Data API v3 Overview & Quota:** https://developers.google.com/youtube/v3/getting-started (HIGH confidence, official docs)
-- **YouTube Data API v3 Quota Calculator:** https://developers.google.com/youtube/v3/determine_quota_cost (HIGH confidence, official docs — `videos.list` = 1 unit, `videoCategories.list` = 1 unit, default quota = 10,000/day)
-- **MDN MutationObserver:** https://developer.mozilla.org/en-US/docs/Web/API/MutationObserver (HIGH confidence, official MDN docs)
-- **YouTube SPA navigation custom events (`yt-navigate-finish`):** Community-documented pattern (MEDIUM confidence — not officially documented by YouTube, but widely used and stable for years)
-- **YouTube custom element tag names:** Community-inspected via DevTools (MEDIUM confidence — stable in practice but no official stability guarantee)
+- **Chrome Extension Service Worker Lifecycle (event listener registration):** https://developer.chrome.com/docs/extensions/develop/concepts/service-workers/lifecycle (HIGH — official docs; "all event listeners must be registered synchronously in the first turn of the event loop")
+- **chrome.tabs.onRemoved API (callback parameters):** https://developer.chrome.com/docs/extensions/reference/api/tabs (HIGH — official docs; callback receives only `tabId` and `removeInfo: { windowId, isWindowClosing }`, no URL)
+- **chrome.tabs permission requirements:** https://developer.chrome.com/docs/extensions/reference/api/tabs (HIGH — official docs; `"tabs"` required to read `url`, `pendingUrl`, `title`, `favIconUrl`)
+- **chrome.storage — no transactions:** https://developer.chrome.com/docs/extensions/reference/api/storage (HIGH — official docs; confirmed no transactional writes)
+- **MV3 service worker listeners stop working (community):** https://groups.google.com/a/chromium.org/g/chromium-extensions/c/05BZLHHxMmc (MEDIUM — community-reported, aligns with official docs on async listener registration)
+- **yt-navigate-finish fires for all SPA navigations:** https://github.com/Zren/ResizeYoutubePlayerToWindowSize/issues/72 (MEDIUM — community-documented behavior; not officially documented by YouTube)
+- **chrome.storage concurrent write race conditions:** https://groups.google.com/a/chromium.org/g/chromium-extensions/c/y5hxPcavRfU (MEDIUM — community-documented; aligns with official docs on no transaction support)
+- **Content script not reinjected on SPA navigation:** https://groups.google.com/a/chromium.org/g/chromium-extensions/c/32lLHYjQUQQ (HIGH — confirmed behavior; content scripts only inject on document creation)
+- **Existing TFY source code analysis:** `/home/solanoe/code/tfy/service-worker.js`, `content-script.js`, `popup.js`, `manifest.json` (HIGH — direct code inspection)
 
 ---
-*Pitfalls research for: Chrome Extension (YouTube sidebar filter)*
-*Researched: 2026-02-20*
+
+*Pitfalls research for: Chrome Extension v1.3 — Tab State Management + SPA Navigation Bug Fixes*
+*Researched: 2026-02-26*
