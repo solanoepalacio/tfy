@@ -13,6 +13,17 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       .catch(err => sendResponse({ error: err.message }));
     return true; // Keep channel open for async sendResponse
   }
+  if (message.type === 'SET_VIDEO_CATEGORY') {
+    // sender.tab.id is authoritative — set per-tab scoped key
+    chrome.storage.local.set({
+      [`currentVideoCategory_${sender.tab.id}`]: message.categoryName
+    });
+    return; // no async response needed
+  }
+  if (message.type === 'CLEAR_VIDEO_CATEGORY') {
+    chrome.storage.local.remove(`currentVideoCategory_${sender.tab.id}`);
+    return;
+  }
 });
 
 async function handleCategoryRequest(videoIds) {
@@ -66,3 +77,17 @@ chrome.webNavigation.onHistoryStateUpdated.addListener(
   },
   { url: [{ hostEquals: 'www.youtube.com' }] }
 );
+
+// ─── Tab Lifecycle Cleanup ────────────────────────────────────────────────
+// TABST-01: Delete per-tab scoped storage key when any tab closes.
+// Must be top-level — service worker re-registers listeners from top-level
+// synchronous code only. Listeners inside async functions are lost on restart.
+// isWindowClosing flag intentionally NOT checked — cleanup always runs
+// (each tab in a closing window fires onRemoved individually anyway).
+chrome.tabs.onRemoved.addListener((tabId) => {
+  chrome.storage.local.remove(`currentVideoCategory_${tabId}`);
+});
+
+// One-time migration: remove stale unscoped key from pre-Phase-7 versions.
+// No-op if key does not exist.
+chrome.storage.local.remove('currentVideoCategory');

@@ -3,7 +3,7 @@
   "name": "TFY — Topic Focused YouTube",
   "version": "0.1.0",
   "description": "Filters YouTube sidebar suggestions to stay on-topic",
-  "permissions": ["storage", "webNavigation", "activeTab"],
+  "permissions": ["storage", "webNavigation", "activeTab", "tabs"],
   "host_permissions": [
     "https://www.googleapis.com/*",
     "https://www.youtube.com/*"
