@@ -12,10 +12,19 @@ document.addEventListener('DOMContentLoaded', async () => {
   const { filteringEnabled = true } = await chrome.storage.local.get('filteringEnabled');
   document.getElementById('toggle-filtering').checked = filteringEnabled;
 
-  const { currentVideoCategory } = await chrome.storage.local.get('currentVideoCategory');
-  if (currentVideoCategory) {
-    document.getElementById('current-category').textContent = `Watching: ${currentVideoCategory}`;
+  // TABST-01/02/03: Read per-tab scoped key for the active tab at popup open time.
+  // If the active tab is not a YouTube watch page, or the tab has no stored category,
+  // the element is left blank (neutral state).
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  if (tab?.url?.includes('youtube.com/watch')) {
+    const key = `currentVideoCategory_${tab.id}`;
+    const result = await chrome.storage.local.get(key);
+    const category = result[key];
+    if (category) {
+      document.getElementById('current-category').textContent = `Watching: ${category}`;
+    }
   }
+  // else: not a YouTube watch page — neutral state (blank) is correct for TABST-03
 });
 
 document.getElementById('save-btn').addEventListener('click', async () => {
