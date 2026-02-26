@@ -52,13 +52,11 @@ function resetAllCollapsed() {
   document.querySelectorAll('.tfy-hidden').forEach(el => el.classList.remove('tfy-hidden'));
 }
 
-// Inject styles immediately so they're available before any filtering runs
-injectTFYStyles();
-
 // ─── Session Cache + Filtering Engine ────────────────────────────────────────
 
 let currentCategoryId = null;  // category of the currently-watched video
 let sidebarObserver = null;    // MutationObserver instance
+let sidebarObserverRetryTimer = null; // handle from observeSidebar's retry setTimeout
 const sessionCategoryCache = new Map(); // videoId -> categoryId, reset on navigation
 let lastProcessedVideoId = null; // prevents double-filtering when both nav signals fire
 let filteringEnabled = true; // module-level; updated by TFY_TOGGLE message
@@ -148,7 +146,7 @@ async function filterSidebar() {
 function observeSidebar(callback) {
   const container = document.querySelector('#secondary');
   if (!container) {
-    setTimeout(() => observeSidebar(callback), 300);
+    sidebarObserverRetryTimer = setTimeout(() => observeSidebar(callback), 300);
     return;
   }
   sidebarObserver = new MutationObserver((mutations) => {
@@ -172,6 +170,10 @@ function observeSidebar(callback) {
 }
 
 function disconnectSidebarObserver() {
+  if (sidebarObserverRetryTimer) {
+    clearTimeout(sidebarObserverRetryTimer);
+    sidebarObserverRetryTimer = null;
+  }
   if (sidebarObserver) {
     sidebarObserver.disconnect();
     sidebarObserver = null;
@@ -179,6 +181,7 @@ function disconnectSidebarObserver() {
 }
 
 async function initForVideo(videoId) {
+  disconnectSidebarObserver();  // idempotency guard — safe to call even if no observer attached
   // Fetch current video's category
   let response = await chrome.runtime.sendMessage({
     type: 'GET_VIDEO_CATEGORY',
@@ -210,37 +213,6 @@ async function initForVideo(videoId) {
   setTimeout(filterSidebar, 1000);
 }
 
-// ─── Category Lookup ─────────────────────────────────────────────────────────
-
-async function fetchAndLogCategory(videoId) {
-  if (!videoId) return;
-  console.log(`[TFY] Detected video: ${videoId}`);
-
-  try {
-    const response = await chrome.runtime.sendMessage({
-      type: 'GET_VIDEO_CATEGORY',
-      videoIds: [videoId]
-    });
-
-    if (!response) {
-      console.warn('[TFY] No response from service worker — worker may be starting up. Retrying...');
-      // Retry once after 500ms to handle service worker cold-start race
-      await new Promise(r => setTimeout(r, 500));
-      return fetchAndLogCategory(videoId);
-    }
-
-    if (response.error) {
-      console.error('[TFY] Error:', response.error);
-      return;
-    }
-
-    const categoryId = response.categories?.[videoId];
-    console.log(`[TFY] Video ${videoId} → category ID: ${categoryId}`);
-  } catch (err) {
-    console.error('[TFY] sendMessage failed:', err.message);
-  }
-}
-
 // ─── Initial Load ─────────────────────────────────────────────────────────────
 // document_idle guarantees the URL reflects the current video.
 // Wrapped in async IIFE because content scripts use classic scripts (not ES modules)
@@ -251,6 +223,7 @@ async function fetchAndLogCategory(videoId) {
   const initialVideoId = new URL(window.location.href).searchParams.get('v');
   if (initialVideoId && filteringEnabled) {
     lastProcessedVideoId = initialVideoId;
+    injectTFYStyles();
     initForVideo(initialVideoId);
   }
 })();
@@ -288,7 +261,7 @@ chrome.runtime.onMessage.addListener((message) => {
     chrome.storage.local.remove('currentVideoCategory');
 
     // Initialize filtering for new video
-    if (filteringEnabled) initForVideo(message.videoId);
+    if (filteringEnabled) { injectTFYStyles(); initForVideo(message.videoId); }
   }
 });
 
@@ -308,5 +281,5 @@ document.addEventListener('yt-navigate-finish', () => {
   currentCategoryId = null;
 
   // Initialize filtering for new video
-  if (filteringEnabled) initForVideo(videoId);
+  if (filteringEnabled) { injectTFYStyles(); initForVideo(videoId); }
 });
